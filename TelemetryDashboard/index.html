@@ -162,6 +162,7 @@
             </div>
             <div id="form" style="border-radius:4px; padding:5px; background-color:white; color:#000; flex:1">
                 <label for="target_url">Server address</label>&nbsp
+                <label for="target_url1">Server address</label>&nbsp <!--IB-->
                 <img id="TT" src="../images/question-circle.svg" style="width: 1em;"
                 data-tippy-allowHTML="true"
                 data-tippy-content='Connection address for WebSocket server forwarding raw binary MAVLink. Attempts to auto connect to MissionPlanner at <code>ws://127.0.0.1:56781</code>. Latest PyMAVLink can also be used eg: <a href="https://github.com/IamPete1/pymavlink/blob/WebSocket_forwarding_example/examples/mavtcpsniff.py">TCP to WebSocket</a>. 
@@ -169,6 +170,7 @@
                 <br>
                 <input id="target_url" type="url" placeholder="ws://127.0.0.1:5863" required="true" pattern="^(ws|wss)://.*">
                 <br>
+                <input id="target_url1" type="url" placeholder="ws://127.0.0.1:5863" required="true" pattern="^(ws|wss)://.*"> <!--IB-->
                 <br>
                 <input id="connection_button" type="button" value="Connect">
                 <input id="disconnection_button" type="button" value="Disconnect">
