@@ -1,6 +1,11 @@
 // Setup connect button in menu widget, this handles WebSocket and incoming MAVLink
+
+//const { act } = require("react")
+
 function setup_connect(button_svg, button_color) {
 
+    console.log('VehicleManager laoded', window.createVehicleParser)
+    console.log('Parser map', window.MAVLinkParsers)
     const tip_div = document.createElement("div")
     tip_div.appendChild(document.importNode(document.getElementById('connection_tip_template').content, true))
     const tip = tippy(button_svg, {
@@ -45,33 +50,88 @@ function setup_connect(button_svg, button_color) {
         tip.hide()
     }
 
-    const url_input = tip_div.querySelector(`input[id="target_url"]`)
-    const url_input1 = tip_div.querySelector(`input[id="target_url1"]`)
+
+    //IB Add vehicle button
+    const vehicleMap = new Map();
+    let activeVehicle = null;
+    let vehicleCount = 0;
+    const add_button = tip_div.querySelector('input[id="add_button"]')
+    const form1 = tip_div.querySelector('div[id="form1"]')
+    //const newInput = new inputters(addVehicle(), addName());
+
+
+    //IB Creates new websocket input
+    function addVehicle() {
+        const ipURL = document.createElement('input');
+        ipURL.id = 'target_url' + vehicleCount;
+        ipURL.type = 'url';
+        ipURL.placeholder = 'ws://127.0.0.1:' + (56781 + vehicleCount);
+        ipURL.required = 'true';
+        ipURL.pattern = '^(ws|wss)://.*';
+        return ipURL;
+    }
+
+    //IB Creates complimentary name input
+    function addName() {
+        const ipName = document.createElement('input');
+        ipName.id = 'name' + vehicleCount;
+        ipName.placeholder = 'Unique Vehicle Name';
+        ipName.required = 'true';
+        return ipName;
+    }
+
+    //IB on add button click creates object newInput, 
+    add_button.onclick = () => {
+        console.log('button click!') 
+        vehicleCount += 1;
+
+        const newVehicle = addVehicle();
+        const newName = addName();
+
+        form1.appendChild(document.createElement('br'));
+        form1.appendChild(newVehicle);
+        form1.appendChild(newName);
+
+        const id = crypto.randomUUID();
+        const vehicle = new inputters(newVehicle, newName, id);
+        const vehicleParsed = window.createVehicleParser(vehicle, id);
+        vehicleMap.set(id, vehicle);
+        activeVehicle = vehicle;
+        //vehicleName = tip_div.querySelector('input[id="target_url"]');
+        //const veh = new MavVehicle(vehicleName, vehicleCount);
+        //veh.display();
+    }
+
+
+    //const url_input = tip_div.querySelector(`input[id="target_url"]`)
+    //const url_input1 = tip_div.querySelector(`input[id="target_url1"]`)
 
     const connect_button = tip_div.querySelector(`input[id="connection_button"]`)
     const disconnect_button = tip_div.querySelector(`input[id="disconnection_button"]`)
 
     // Websocket object
-    let ws = null
-    let ws1 = null //IB
+    //let ws = null
+    //let ws1 = null //IB
     let expecting_close = false
     let been_connected = false
 
+    //this bit probably needs editing
     function set_inputs(connected) {
         // Disable connect button and url input, enable disconnect button
         connect_button.disabled = connected
-        url_input.disabled = connected
-        url_input1.disabled = connected //IB
+        //vehicle.url_input.disabled = connected
+        //url_input1.disabled = connected //IB
 
         disconnect_button.disabled = !connected
     }
     set_inputs(false)
 
     // Connect to WebSocket server
-    function connect(target, target1, auto_connect) { //IB add target1
+    function connect(vehicle, auto_connect) { //IB add target1
         // Make sure we are not connected to something else
+        console.log('connect has been called');
+        console.log(vehicle.ws)
         disconnect()
-
         // Can't connect twice
         // set_inputs(true) IB comment out
 
@@ -80,15 +140,28 @@ function setup_connect(button_svg, button_color) {
 
         // True if we have ever been connected
         been_connected = false
-
-        ws = new WebSocket(target)
-        ws1 = new WebSocket(target1) //IB
-        ws.binaryType = "arraybuffer"
-        ws1.binaryType = "arraybuffer" //IB
+        
+        //ws = new WebSocket(target)
+        //ws1 = new WebSocket(target1) //IB
+        //ws.binaryType = "arraybuffer"
+        //ws1.binaryType = "arraybuffer" //IB
 
         expecting_close = false
 
-        ws.onopen = () => {
+        vehicle.ws_ctrl;
+ 
+        if (!vehicle.ws) {
+            console.error('veh or ws not ready', vehicle)
+            return
+        }
+ 
+        vehicle.ws.addEventListener('open', () => {
+            //console.error('err', e);
+            console.log('we have open!');            
+            button_color("green");
+
+        });
+        /* vehicle.ws.addEventListener('open') = () => {
             button_color("green")
 
             // Hide tip
@@ -98,30 +171,37 @@ function setup_connect(button_svg, button_color) {
             disconnect_button.disabled = false
 
             // Set input to current value
-            url_input.value = target
+            vehicle.webSocketURL.value = vehicle.target;
 
             // Have been connected
             been_connected = true
-        }
+        } */
 
         //IB ws1.onopen
-        ws1.onopen = () => {
-            button_color("blue")
+        //ws1.onopen = () => {
+        //    button_color("blue")
 
             // Hide tip
-            tip.hide()
+        //    tip.hide()
 
             // Allow disconnect
-            disconnect_button.disabled = false
+        //    disconnect_button.disabled = false
 
             // Set input to current value
-            url_input1.value = target1
+        //    url_input1.value = target1
 
             // Have been connected
-            been_connected = true
-        }
+        //    been_connected = true
+        //}
 
-        ws.onclose = () => {
+
+        vehicle.ws.addEventListener('open', (e) => {
+            console.error('err', e);
+            console.log('we have open!');
+        });
+
+        vehicle.ws.onclose = (e) => {
+            console.error('WebSocket Closed', e.code, e.reason);
             if ((auto_connect === true) && !been_connected) {
                 // Don't show a failed connection if this is a auto connection attempt which failed
                 button_color("black")
@@ -136,68 +216,86 @@ function setup_connect(button_svg, button_color) {
         }
 
         //IB ws1.onclose
-        ws1.onclose = () => {
-            if ((auto_connect === true) && !been_connected) {
+        //ws1.onclose = () => {
+        //   if ((auto_connect === true) && !been_connected) {
                 // Don't show a failed connection if this is a auto connection attempt which failed
-                button_color("gray")
+        //        button_color("gray")
 
-            } else if (!expecting_close) {
+        //    } else if (!expecting_close) {
                 // Don't show red if the user manually disconnected
-                button_color("purple")
-            }
+        //        button_color("purple")
+        //    }
 
             // Enable connect buttons
-            set_inputs(false)
-        }
+        //    set_inputs(false)
+        //}
 
+        //ws.onerror moved inside vehicle
 
-        ws.onerror = (e) => {
-            console.log(e)
-            ws.close()
-        }
+        
 
-        ws.onmessage = (msg) => {
+        vehicle.ws.onmessage = (msg) => {
+            if (msg === undefined) {
+                console.log('ahhhhh')
+            }
+            else {
+                console.log('all good')
+            }
+            console.log('ms', msg === undefined)
+            //console.log('Messages');
+            console.log('type'+ typeof msg.data);
+            console.log('array'+ msg.data instanceof ArrayBuffer);
+            console.log('blob'+ msg.data instanceof Blob);
+            console.log('uint8arry'+ msg.data instanceof Uint8Array);
+        
             // Feed data to MAVLink parser and forward messages
+            const veh = window.MAVLinkParsers.get(vehicle.id)
+            if (!veh) {
+                console.log('did not get the message');
+                return
+            }
             for (const char of new Uint8Array(msg.data)) {
-                const m = MAVLink.parseChar(char)
+                const m = veh.parser.parseChar(char)
                 if ((m != null) && (m._id != -1)) {
                     m._timeStamp = Date.now()
                     broadcast.postMessage({ MAVLink: m })
+                    console.log('i got a message')
                 }
             }
+
         }
 
         //IB ws1.onmessage
-        ws1.onmessage = (msg) => {
+        //ws1.onmessage = (msg1) => {
             // Feed data to MAVLink parser and forward messages
-            for (const char of new Uint8Array(msg.data)) {
-                const m = MAVLink.parseChar(char)
-                if ((m != null) && (m._id != -1)) {
-                    m._timeStamp = Date.now()
-                    broadcast.postMessage({ MAVLink: m })
-                }
-            }
-        }
+        //    for (const char1 of new Uint8Array(msg1.data)) {
+        //        const m1 = MAVLink1.parseChar(char1)
+        //        if ((m1 != null) && (m1._id != -1)) {
+        //            m1._timeStamp = Date.now()
+        //            broadcast.postMessage({ MAVLink1: m1 })
+        //        }
+        //    }
+        //}
 
     }
 
     // Disconnect from WebSocket server
     function disconnect() {
         // Close socket
-        if (ws != null) {
+        if (activeVehicle.ws != null) {
             expecting_close = true
-            ws.close()
+            activeVehicle.ws.close()
         }
 
-        if (ws1 != null) { //IB
-            expecting_close = true
-            ws1.close()
-        }
+        //if (ws1 != null) { //IB
+        //    expecting_close = true
+        //    ws1.close()
+        //}
 
         // Return button to black
         button_color("black")
-        url_input.disabled = false
-        url_input1.disabled = false //IB
+        activeVehicle.target.disabled = false
+        //url_input1.disabled = false //IB
 
         // Enable connect buttons
         set_inputs(false)
@@ -205,41 +303,58 @@ function setup_connect(button_svg, button_color) {
 
 
     connect_button.onclick = () => {
-        const in_progress = (ws != null) && ((ws.readyState == WebSocket.CONNECTING) || (ws.readyState == WebSocket.CLOSING))
+
+        console.log('connect button clicked')
+        // Checks for active vehicle IB
+        if (!activeVehicle) {
+            console.error('No active vehicle');
+            return;
+        }
+
+        // Sets WebSocket to value inputted IB
+        activeVehicle.set_ws();
+ 
+        const in_progress = (activeVehicle.ws != null) && ((activeVehicle.ws.readyState == WebSocket.CONNECTING) || (activeVehicle.ws.readyState == WebSocket.CLOSING))
         if (in_progress) {
             // Don't do anything if the socket is connecting or closing a connection
             return
         }
 
-        if (!url_input.checkValidity()) {
+        if (!activeVehicle.target.checkValidity()) {
             // Invalid address, re-fire the tip and focus the url
             tip.show()
-            url_input.focus()
+            activeVehicle.target.focus()
             return
         }
-        if (!url_input1.checkValidity()) { //IB
+        //if (!url_input1.checkValidity()) { //IB
             // Invalid address, re-fire the tip and focus the url1
-            tip.show()
-            url_input1.focus()
-            return
+        //    tip.show()
+        //    url_input1.focus()
+        //    return
+        //}
+
+        activeVehicle.target.disabled = true
+        //url_input1.disabled = true //IB
+        if (activeVehicle) {
+            console.log('uh oh')
+        } else {
+            console.log('whoo')
         }
+        console.log(activeVehicle.target)
+        connect(activeVehicle) //IB add url_unput1.value
 
-        url_input.disabled = true
-        url_input1.disabled = true //IB
-
-        connect(url_input.value, url_input1.value) //IB add url_unput1.value
     }
 
     disconnect_button.onclick = () => {
 
-        if ((ws != null) && (ws.readyState == WebSocket.CLOSING)) {
+        if ((activeVehicle.ws != null) && (activeVehicle.ws.readyState == WebSocket.CLOSING)) {
             // Don't do anything if the socket is already or closing a connection
             return
         }
-        if ((ws1 != null) && (ws1.readyState == WebSocket.CLOSING)) { //IB
-            // Don't do anything if the socket is already or closing a connection
-            return
-        }
+        //if ((ws1 != null) && (ws1.readyState == WebSocket.CLOSING)) { //IB
+        //    // Don't do anything if the socket is already or closing a connection
+        //    return
+        //}
         disconnect()
     }
 
@@ -749,4 +864,6 @@ function handle_unload(event) {
     save_button.focus()
 
 }
+
+
 
