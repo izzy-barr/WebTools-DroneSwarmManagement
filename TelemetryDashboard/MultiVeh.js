@@ -10,11 +10,12 @@ window.createVehicle = function (vehicle, vehicleID) {
 
 
 class mavVehicle {
-    constructor(webSocketURL, userVehicleName, removeBtn, rowEl) {
-        this.webSocketURL = webSocketURL;
-        this.userVehicleName = userVehicleName;
-        this.removeBtn = removeBtn;
+    constructor(rowEl, id) {
         this.rowEl = rowEl;
+        this.id = id;
+        this.webSocketURL = this.rowEl.querySelector(`input[id="url${this.id}"]`);
+        this.userVehicleName = this.rowEl.querySelector(`input[id="name${this.id}"]`);
+        this.removeBtn = this.rowEl.querySelector(`input[id="remove${this.id}"]`);
         this.MAVLink = new MAVLink20Processor();
         this.target = null;
         this.ws = null;
@@ -64,6 +65,10 @@ class mavVehicle {
         console.log('remove_ws called');
 
         if (this.ws) {
+            this.ws.onopen = null;
+            this.ws.onclose = null;
+            this.ws.onerror = null;
+            this.ws.onmessage = null;
             this.ws.close();
             this.ws = null;
         }

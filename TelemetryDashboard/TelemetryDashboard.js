@@ -92,18 +92,17 @@ function setup_connect(button_svg, button_color) {
         console.log('Add button clicked')
 
         const id = crypto.randomUUID();
-        const newURL = addURL(id);
-        const newName = addName(id);
         const newRemove = addRemove(id);
         const row = document.createElement('div');
         row.className = 'vehicleRow';
 
-        row.appendChild(newURL);
-        row.appendChild(newName);
+        row.appendChild(addURL(id));
+        row.appendChild(addName(id));
         row.appendChild(newRemove);
         form1.appendChild(row);
 
-        const vehicle = new mavVehicle(newURL, newName, newRemove, row);
+        const vehicle = new mavVehicle(row, id);
+
         window.createVehicle(vehicle, id);
 
         newRemove.onclick = () => {
@@ -111,8 +110,15 @@ function setup_connect(button_svg, button_color) {
 
             const vehicle = vehicleMap.get(id);
 
-            if (!vehicle)
+            console.log(vehicle);
+            if (!vehicle) {
+                console.log('No vehicle of that id')
                 return;
+            }
+
+            if (vehicle.webSocketURL.disabled === true) {
+                disconnect(vehicle)
+            }
 
             vehicle.remove_ws();
             vehicleMap.delete(id);
@@ -123,10 +129,7 @@ function setup_connect(button_svg, button_color) {
 
         set_inputs(false)
     }
-
-    //IB Remove inputs on button click
     
-
 
     function set_inputs(connected) {
         // Disable connect button and url input, enable disconnect button
@@ -144,11 +147,11 @@ function setup_connect(button_svg, button_color) {
     set_inputs(false)
 
     // Connect to WebSocket server
-    function connect(vehicle, auto_connect) { //IB add target1
+    function connect(vehicle, auto_connect) { 
         console.log('connect function called')
         
         // Make sure we are not connected to something else
-        disconnect()
+        disconnect(vehicle)
 
         //IB Sets websocket to value inputted
         vehicle.set_ws();
@@ -202,7 +205,7 @@ function setup_connect(button_svg, button_color) {
     }
 
     // Disconnect from WebSocket server
-    function disconnect() {
+    function disconnect(vehicle) {
         console.log('disconnect function called')
         // Close socket
         if (activeVehicle.ws != null) {
@@ -213,8 +216,15 @@ function setup_connect(button_svg, button_color) {
         // Return button to black
         button_color("black")
 
+        if (been_connected === true) {
+            vehicle.ws.removeEventListener('open', null);
+            vehicle.ws.removeEventListener('close', null);
+        }
+        
+
         // Enable connect buttons
         set_inputs(false)
+
     }
 
 
@@ -240,8 +250,6 @@ function setup_connect(button_svg, button_color) {
             return
         }
 
-        activeVehicle.webSocketURL.disabled = true
-
         connect(activeVehicle)
 
     }
@@ -253,7 +261,7 @@ function setup_connect(button_svg, button_color) {
             return
         }
 
-        disconnect()
+        disconnect(activeVehicle)
     }
 
     // Try auto connecting to MissionPlanner
@@ -390,7 +398,7 @@ function init_grid(columns, rows) {
 function load_default_grid() {
 
     // Read in file and load
-    fetch("Default_Layout.json").then((res) => {
+    fetch("Default_Layout_Multi.json").then((res) => {
         return res.json()
     }).then((obj) => {
         load_layout(obj.grid, obj.widgets)
@@ -595,12 +603,12 @@ function init_pallet() {
         // Load in json definitions
         const sandbox_files = [
             { path: "SandBoxWidgets/Attitude.json", pos: { x: 1, y: 0, w: 2, h: 2 } },
-            { path: "SandBoxWidgets/Graph.json",    pos: { x: 3, y: 0, w: 3, h: 2 } },
+            /*{ path: "SandBoxWidgets/Graph.json",    pos: { x: 3, y: 0, w: 3, h: 2 } },
             { path: "SandBoxWidgets/Map.json", pos: { x: 0, y: 2, w: 2, h: 2 } },
             { path: "SandBoxWidgets/MAVLink_Inspector.json", pos: { x: 2, y: 2, w: 2, h: 2 } },
             { path: "SandBoxWidgets/Messages.json", pos: { x: 4, y: 2, w: 2, h: 2 } },
             { path: "SandBoxWidgets/Value.json", pos: { x: 0, y: 4, w: 1, h: 1 } },
-            { path: "SandBoxWidgets/Stats.json", pos: { x: 3, y: 5, w: 1, h: 1 } },
+            { path: "SandBoxWidgets/Stats.json", pos: { x: 3, y: 5, w: 1, h: 1 } },*/
         ]
 
         let import_done = []
@@ -762,4 +770,3 @@ function handle_unload(event) {
     save_button.focus()
 
 }
-
