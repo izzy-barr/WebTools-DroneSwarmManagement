@@ -212,6 +212,11 @@ class WidgetMenu extends WidgetBase {
         settings_div.appendChild(document.importNode(document.getElementById('settings_icon_template').content, true))
         this.grid.addWidget(settings_div)
 
+        // MultiVehicle button
+        let multivehicle_div = document.createElement("div")
+        multivehicle_div.appendChild(document.importNode(document.getElementById('multivehicle_icon_template').content, true))
+        this.grid.addWidget(multivehicle_div)
+
         // Tip for settings
         const settings_icon = settings_div.querySelector(`svg[name="gear"]`)
         settings_icon.id = "MenuSettingsIcon"
@@ -316,6 +321,10 @@ class WidgetMenu extends WidgetBase {
         }
         setup_connect(connect_icon, set_color)
 
+        //IB MultiVehicle button
+        let multivehicle_icon = multivehicle_div.querySelector('svg')
+        setup_manager(multivehicle_icon)
+
         // watch for size changes
         new ResizeObserver(() => { this.#update_size() }).observe(this)
 
@@ -350,7 +359,7 @@ class WidgetMenu extends WidgetBase {
 
         // Set number of columns and row height
         this.grid.column(columns)
-        this.grid.cellHeight(Math.floor((height * columns) / 4) + "px")
+        this.grid.cellHeight(Math.floor((height * columns) / 5) + "px")
 
         // Place each item
         const widgets = this.grid.getGridItems()

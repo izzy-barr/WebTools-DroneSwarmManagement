@@ -127,7 +127,6 @@
     }
 
     let handle_MAVLink = function(msg) {
-
         if (user_class == null) {
             return
         }
@@ -182,7 +181,12 @@
     const broadcast = new BroadcastChannel("MAVLinkMSG")
     broadcast.onmessage = (e) => {
         if (e?.data?.MAVLink) {
-            handle_MAVLink(e.data.MAVLink)
+            const msg = e.data.MAVLink;
+
+            //IB only allow selected vehicle messages to be handled
+            if (msg._vehicleID == parent.selectVehicle.id) {
+                handle_MAVLink(msg)
+            }
         }
     }
 
