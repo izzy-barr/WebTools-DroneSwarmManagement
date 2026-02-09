@@ -53,7 +53,7 @@ function setup_connect(button_svg, button_color) {
     const add_button = tip_div.querySelector('input[id="add_button"]')
     const connect_button = tip_div.querySelector(`input[id="connection_button"]`)
     const disconnect_button = tip_div.querySelector(`input[id="disconnection_button"]`)
-    const form1 = tip_div.querySelector('div[id="form1"]')
+    const form = tip_div.querySelector('div[id="form"]')
 
     // Websocket object
     let expecting_close = false
@@ -99,7 +99,9 @@ function setup_connect(button_svg, button_color) {
         row.appendChild(addURL(id));
         row.appendChild(addName(id));
         row.appendChild(newRemove);
-        form1.appendChild(row);
+        form.appendChild(row);
+
+
 
         const vehicle = new mavVehicle(row, id);
 
@@ -110,7 +112,6 @@ function setup_connect(button_svg, button_color) {
 
             const vehicle = vehicleMap.get(id);
 
-            console.log(vehicle);
             if (!vehicle) {
                 console.log('No vehicle of that id')
                 return;
@@ -155,6 +156,7 @@ function setup_connect(button_svg, button_color) {
 
         //IB Sets websocket to value inputted
         vehicle.set_ws();
+        vehicle.set_name();
 
         // Can't connect twice
         set_inputs(true)
@@ -214,13 +216,7 @@ function setup_connect(button_svg, button_color) {
         }
 
         // Return button to black
-        button_color("black")
-
-        if (been_connected === true) {
-            vehicle.ws.removeEventListener('open', null);
-            vehicle.ws.removeEventListener('close', null);
-        }
-        
+        button_color("black")        
 
         // Enable connect buttons
         set_inputs(false)
@@ -266,6 +262,88 @@ function setup_connect(button_svg, button_color) {
 
     // Try auto connecting to MissionPlanner
     // connect("ws://127.0.0.1:56781", true) IB commented outs
+
+}
+
+//IB Setup manager button in menu widget, this handles multiple vehicle management and selection
+function setup_manager(button_svg) {
+    console.log('setup_manager called')
+
+    const tip_div = document.createElement("div")
+    tip_div.appendChild(document.importNode(document.getElementById('multivehicle_tip_template').content, true))
+    const selector = tip_div.querySelector('select[id="vehicleSelector"]')
+
+    const tip = tippy(button_svg, {
+        content: tip_div,
+        interactive: true,
+        trigger: 'manual',
+        maxWidth: "1000px",
+        appendTo: () => document.body,
+        popperOptions: {
+            strategy: 'fixed',
+            modifiers: [
+                {
+                  name: 'flip',
+                  options: {
+                    fallbackPlacements: ['bottom', 'right'],
+                  },
+                },
+                {
+                  name: 'preventOverflow',
+                  options: {
+                    altAxis: true,
+                    tether: false,
+                  },
+                },
+              ],
+        },
+    })
+
+    // Set selected vehicle
+    function set_selectVehicle() {
+        let selectedVehicleID = selector.value;
+        window.selectVehicle = vehicleMap.get(selectedVehicleID);
+        console.log('selected vehicle: ' + window.selectVehicle)
+    }
+
+    function get_selectVehicle () {
+        let selectedVehicleID = window.selectVehicle.id;
+        selector.value = selectedVehicleID;
+    }
+
+    // On click, update list of vehicles to be selected according to connected websockets
+    button_svg.onclick = () => { 
+        selector.innerHTML="";            
+        vehicleMap.forEach(element => selector.appendChild(new Option(element.name, element.id)));
+
+        if (window.selectVehicle !== null) {
+            get_selectVehicle();
+        }
+
+        tip.show()
+    }
+
+    selector.addEventListener('change', () => {
+        console.log('change')
+        set_selectVehicle();
+    })
+
+    // Close button
+    tip_div.querySelector(`svg[id="Close"]`).onclick = () => {
+
+        // If there are options to choose from, set selected option
+        if (selector.innerHTML !== "") {
+            set_selectVehicle()
+        }
+
+        tip.hide()
+    }
+
+    // Connection tool tip
+    tippy(tip_div.querySelector('img[id="TT"]'), {
+        appendTo: () => document.body,
+        theme: 'light-border', // differentiate from the interactive tip were in already
+    })
 
 }
 
@@ -603,12 +681,12 @@ function init_pallet() {
         // Load in json definitions
         const sandbox_files = [
             { path: "SandBoxWidgets/Attitude.json", pos: { x: 1, y: 0, w: 2, h: 2 } },
-            /*{ path: "SandBoxWidgets/Graph.json",    pos: { x: 3, y: 0, w: 3, h: 2 } },
+            { path: "SandBoxWidgets/Graph.json",    pos: { x: 3, y: 0, w: 3, h: 2 } },
             { path: "SandBoxWidgets/Map.json", pos: { x: 0, y: 2, w: 2, h: 2 } },
             { path: "SandBoxWidgets/MAVLink_Inspector.json", pos: { x: 2, y: 2, w: 2, h: 2 } },
             { path: "SandBoxWidgets/Messages.json", pos: { x: 4, y: 2, w: 2, h: 2 } },
             { path: "SandBoxWidgets/Value.json", pos: { x: 0, y: 4, w: 1, h: 1 } },
-            { path: "SandBoxWidgets/Stats.json", pos: { x: 3, y: 5, w: 1, h: 1 } },*/
+            { path: "SandBoxWidgets/Stats.json", pos: { x: 3, y: 5, w: 1, h: 1 } },
         ]
 
         let import_done = []

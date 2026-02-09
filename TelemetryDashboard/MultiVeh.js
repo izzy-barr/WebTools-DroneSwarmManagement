@@ -49,16 +49,21 @@ class mavVehicle {
 
         this.ws.onmessage = (msg) => {
             console.log('ws.onmessage ' + this.target)
-
             // Feed data to MAVLink parser and forward messages
             for (const char of new Uint8Array(msg.data)) {
                 const m = this.MAVLink.parseChar(char)
                 if ((m != null) && (m._id != -1)) {
                     m._timeStamp = Date.now()
+                    m._vehicleID = this.id;
                     broadcast.postMessage({ MAVLink: m })
                 }
             }
         }
+    }
+
+
+    set_name() {
+        this.name = this.userVehicleName.value;
     }
 
     remove_ws() {
@@ -69,6 +74,8 @@ class mavVehicle {
             this.ws.onclose = null;
             this.ws.onerror = null;
             this.ws.onmessage = null;
+            this.ws.removeEventListener('open', null);
+            this.ws.removeEventListener('close', null);
             this.ws.close();
             this.ws = null;
         }
