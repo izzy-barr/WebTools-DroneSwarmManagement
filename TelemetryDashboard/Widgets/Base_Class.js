@@ -45,6 +45,16 @@ class WidgetBase extends HTMLElement {
             }
         }
 
+        //IB Select Vehicle Dropdown Menu and Select Vehicle
+        this.selector = this.tippy_div.querySelector('select[id="vehicleSelector"]')
+        this.selectVehicle = null;
+
+        //IB Change selectedVehicle on change of dropdown menu
+        this.selector.addEventListener('change', () => {
+            console.log('Indiv change')
+            this.set_selectVehicle();
+        })
+
         // Remove button
         this.tippy_div.querySelector(`svg[id="Delete"]`).onclick = () => {
             const text = "This widget has not been downloaded!\n Click OK to delete anyway."
@@ -57,6 +67,12 @@ class WidgetBase extends HTMLElement {
 
         // Close button
         this.tippy_div.querySelector(`svg[id="Close"]`).onclick = () => {
+
+            //IB If there are options to choose from, set selected option
+            if (this.selector.innerHTML !== "") {
+                this.set_selectVehicle()
+            }
+
             this.edit_tip.hide()
         }
 
@@ -87,10 +103,12 @@ class WidgetBase extends HTMLElement {
 
         // Add form
         const form_div = this.tippy_div.querySelector(`div[id="form"]`)
+        form_definition = this.add_vehicleSelector(form_definition) //IB add vehicle selector to all widget form definitions
+
         Formio.createForm(form_div, form_definition).then((form) => {
             // Populate form object and add changed callback
             this.form = form
-
+            
             // Load form
             this.form.setForm(form_definition).then(() => {
 
@@ -156,7 +174,20 @@ class WidgetBase extends HTMLElement {
         })
 
         this.ondblclick = (e) => {
+
+            //IB update vehicle selector according to options in vehicleMap
+            this.updateVehicleSelect()
+
             if (this.edit_enabled) {
+            
+                //IB Create options for select vehicle dropdown menu according to connected websockets
+                this.selector.innerHTML="";            
+                vehicleMap.forEach(element => this.selector.appendChild(new Option(element.name, element.id)));
+
+                if (this.selectVehicle !== null) {
+                    this.get_selectVehicle();
+                }
+
                 this.edit_tip.show()
             }
 
@@ -164,6 +195,83 @@ class WidgetBase extends HTMLElement {
             e.stopPropagation()
         }
 
+    }
+
+    //IB adding Vehicle Selector to schema
+    add_vehicleSelector(schema) {
+        console.log('add_vehicleSelector called')
+
+        if (!schema || !schema.components) {
+            console.log('No schema or components found, returning original schema')
+            return schema
+        }
+
+        let currentEntries = this.get_mapEntries()
+
+        console.log('vehicleMap:', vehicleMap, currentEntries)
+
+        // Try to find existing selector
+        const existingComponent = schema.components.find(
+            comp => comp.key === "vehicleID"
+        )
+
+        if (existingComponent) {
+            console.log('Vehicle selector exists — updating values')
+
+            existingComponent.data.values = currentEntries
+            return schema
+        }
+
+        console.log('Vehicle selector does not exist — creating it')
+
+        schema.components.unshift({
+            type: "select",
+            label: "Select Vehicle",
+            key: "vehicleID",
+            input: true,
+            tableView: true,
+            dataSrc: "values",
+            data: {
+                values: currentEntries
+            }
+        })
+
+        return schema
+    }
+
+    //IB Get entries for select vehicle dropdown menu according to connected websockets
+     get_mapEntries() {
+        console.log('get_mapEntries called')
+        if (!vehicleMap || vehicleMap.size === 0) {
+            console.log('vehicleMap is empty')
+            return []
+        } 
+        
+        console.log('not empty', vehicleMap)
+
+        return [...vehicleMap.values()].map(vehicle => ({
+                label: vehicle.name,
+                value: vehicle.id
+            }))
+    }
+
+     //IB update select Vehicle options in dropdown menu according to connected websockets
+    updateVehicleSelect() {
+        console.log('updateVehicleSelect called')
+
+        if (!this.form) {
+            return
+        }
+
+        const comp = this.form.getComponent("vehicleID")
+        if (!comp) {
+            return
+        }
+
+        const values = this.get_mapEntries()
+
+        comp.component.data.values = values
+        comp.redraw()
     }
 
     // Enable or disable editing
@@ -178,6 +286,18 @@ class WidgetBase extends HTMLElement {
         return this.about
     }
 
+    //IB Set selectedVehicle according to chosen option in dropdown menu
+    set_selectVehicle() {
+        let selectedVehicleID = this.selector.value;
+        this.selectVehicle = vehicleMap.get(selectedVehicleID);
+        console.log('Indiv selected vehicle: ' + this.selectVehicle.id)
+    }
+
+    //IB Get selectedVehicle and set it to chosen option
+    get_selectVehicle () {
+        let selectedVehicleID = this.selectVehicle.id;
+        this.selector.value = selectedVehicleID;
+    }
     
     // Get edit text type
     get_edit_language() { }

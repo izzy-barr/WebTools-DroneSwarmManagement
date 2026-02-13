@@ -51,12 +51,21 @@ class WidgetCustomHTML extends WidgetBase {
     })
 
     // Incoming MAVLink messages
-    const broadcast = new BroadcastChannel("MAVLinkMSG")
-    broadcast.onmessage = (e) => {
+    const mavlinkChannel = new BroadcastChannel("MAVLinkMSG")
+    mavlinkChannel.onmessage = (e) => {
         if (e?.data?.MAVLink) {
-            handle_MAVLink(e.data.MAVLink)
+            const msg = e.data.MAVLink;
+
+            //IB if only one vehicle, simply handle that message
+            if (parent.selectVehicle == null) {
+                //IB do nothing
+            } else if (msg._vehicleID == parent.selectVehicle.id) {             
+                //IB only allow selected vehicle messages to be handled
+                handle_MAVLink(msg);
+            }
         }
     }
+        
 </script>
 </html>
 `

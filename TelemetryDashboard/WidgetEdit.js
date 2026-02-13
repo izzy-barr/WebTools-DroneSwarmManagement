@@ -260,7 +260,7 @@ values = get_fields(id)
         components: {
             mavlinkmsg: Mavlinkmsg,
             mavlinkfield: Mavlinkfield,
-            color: Color
+            color: Color,
         }
     })
 

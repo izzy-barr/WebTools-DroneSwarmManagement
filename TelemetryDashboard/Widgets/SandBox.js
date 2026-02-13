@@ -29,8 +29,8 @@ div.appendChild(message_report)
 
 // Runtime function
 handle_msg = function (msg) {
-    message_report.nodeValue = "Vehicle" + msg._vehicleID + "Got: " + msg._name
-}
+    message_report.nodeValue = "Vehicle" + msg._vehicleID +"Got: " + msg._name
+   }
 `
 
         // Load provided script if available

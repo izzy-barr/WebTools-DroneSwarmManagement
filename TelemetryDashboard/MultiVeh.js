@@ -13,12 +13,24 @@ class mavVehicle {
     constructor(rowEl, id) {
         this.rowEl = rowEl;
         this.id = id;
-        this.webSocketURL = this.rowEl.querySelector(`input[id="url${this.id}"]`);
-        this.userVehicleName = this.rowEl.querySelector(`input[id="name${this.id}"]`);
-        this.removeBtn = this.rowEl.querySelector(`input[id="remove${this.id}"]`);
+        this.set_querySelectors();
         this.MAVLink = new MAVLink20Processor();
         this.target = null;
         this.ws = null;
+    }
+
+    // Points query selectors to respective elements in row
+    set_querySelectors() {
+        this.webSocketURL = this.rowEl.querySelector(`input[id="url${this.id}"]`);
+        this.userVehicleName = this.rowEl.querySelector(`input[id="name${this.id}"]`);
+        this.removeBtn = this.rowEl.querySelector(`input[id="remove${this.id}"]`);
+        this.connectBtn = this.rowEl.querySelector(`input[id="connect${this.id}"]`);
+        this.disconnectBtn = this.rowEl.querySelector(`input[id="disconnect${this.id}"]`);
+    }
+
+    // Sets colour depending on connection status
+     set_colour(colour) {
+        this.colour = colour;
     }
 
     // Sets the websocket to the value the input
@@ -55,7 +67,8 @@ class mavVehicle {
                 if ((m != null) && (m._id != -1)) {
                     m._timeStamp = Date.now()
                     m._vehicleID = this.id;
-                    broadcast.postMessage({ MAVLink: m })
+                    m._colour = this.colour;
+                    mavlinkChannel.postMessage({ MAVLink: m })
                 }
             }
         }

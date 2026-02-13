@@ -131,8 +131,13 @@
             return
         }
 
-        try {
-            user_class.handle_msg(msg)
+        try { 
+            //if (parent.selectVehicle == null) {
+                //IB do nothing
+            //} 
+            //else if (msg._vehicleID == parent.selectVehicle.id) {
+                user_class.handle_msg(msg)
+            //}
         } catch (e) {
             user_error(e)
         }
@@ -178,15 +183,11 @@
     })
 
     // Incoming MAVLink messages
-    const broadcast = new BroadcastChannel("MAVLinkMSG")
-    broadcast.onmessage = (e) => {
+    const mavlinkChannel = new BroadcastChannel("MAVLinkMSG")
+    mavlinkChannel.onmessage = (e) => {
         if (e?.data?.MAVLink) {
             const msg = e.data.MAVLink;
-
-            //IB only allow selected vehicle messages to be handled
-            if (msg._vehicleID == parent.selectVehicle.id) {
-                handle_MAVLink(msg)
-            }
+            handle_MAVLink(msg);
         }
     }
 
