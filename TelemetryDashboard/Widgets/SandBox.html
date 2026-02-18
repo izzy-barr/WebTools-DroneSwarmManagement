@@ -132,12 +132,27 @@
         }
 
         try { 
-            //if (parent.selectVehicle == null) {
+            const selected = options.vehicleID
+
+            if (!selected) return
+
+            if (Array.isArray(selected)) {
+                if (selected.includes(msg._vehicleID)) {
+                    user_class.handle_msg(msg)
+                }
+            } else {
+                if (msg._vehicleID === selected) {
+                    user_class.handle_msg(msg)
+                }
+            }
+
+
+            /*if (options.vehicleID == null) {
                 //IB do nothing
-            //} 
-            //else if (msg._vehicleID == parent.selectVehicle.id) {
+            } 
+            else if (msg._vehicleID == options.vehicleID) { //IB only send messages from selected vehicle to user script
                 user_class.handle_msg(msg)
-            //}
+            }*/
         } catch (e) {
             user_error(e)
         }

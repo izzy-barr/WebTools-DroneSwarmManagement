@@ -1,4 +1,6 @@
-// Setup connect button in menu widget, this handles WebSocket and incoming MAVLink
+
+
+    // Setup connect button in menu widget, this handles WebSocket and incoming MAVLink
 function setup_connect(button_svg, button_color) {
 
     console.log('MultiVeh loaded', window.createVehicle)
@@ -53,9 +55,6 @@ function setup_connect(button_svg, button_color) {
     const add_button = tip_div.querySelector('input[id="add_button"]')
     const form = tip_div.querySelector('div[id="form"]')
 
-    // Websocket object
-    let expecting_close = false
-    let been_connected = false
 
     //IB Create new websocket input
     function addURL(idNum) {
@@ -121,6 +120,9 @@ function setup_connect(button_svg, button_color) {
 
         const vehicle = new mavVehicle(row, id);
 
+        vehicle.colour = "black"
+        console.log(vehicle.colour)
+        
         window.createVehicle(vehicle, id);
 
         newRemove.onclick = () => {
@@ -200,38 +202,38 @@ function setup_connect(button_svg, button_color) {
 
         // Set orange for connecting
         button_color("orange")
-        vehicle.set_colour("orange")
+        vehicle.colour = "orange"
 
         // True if we have ever been connected
-        been_connected = false
-        expecting_close = false
+        vehicle.been_connected = false
+        vehicle.expecting_close = false
 
         //IB addEventListeners for Open and Close of websockets, nb no 'error' or 'message' here since it is independent of TelemetryDashboard.js
         vehicle.ws.addEventListener('open', () => {
             console.log('we have open!')
 
             button_color("green")
-            vehicle.set_colour("green")
+            vehicle.colour = "green"
 
             // Set input to current value
             vehicle.webSocketURL.value = vehicle.target
 
             // Have been connected
-            been_connected = true
+            vehicle.been_connected = true
         })
 
         vehicle.ws.addEventListener('close', () => {
             console.log('we have close!')
 
-            if ((auto_connect === true) && !been_connected) {
+            if ((auto_connect === true) && !vehicle.been_connected) {
                 // Don't show a failed connection if this is a auto connection attempt which failed
                 button_color("black")
-                vehicle.set_colour("black")
+                vehicle.colour = "black"
 
-            } else if (!expecting_close) {
+            } else if (!vehicle.expecting_close) {
                 // Don't show red if the user manually disconnected
                 button_color("red")
-                vehicle.set_colour("red")
+                vehicle.colour = "red"
             }
 
             // Enable connect buttons
@@ -246,23 +248,21 @@ function setup_connect(button_svg, button_color) {
         console.log('disconnect function called')
         // Close socket
         if (vehicle.ws != null) {
-            expecting_close = true
+            vehicle.expecting_close = true
             vehicle.ws.close()
         }
 
         // Return button to black
         button_color("black")      
-        vehicle.set_colour("black")  
+        vehicle.colour = "black"
 
         // Enable connect buttons
         set_inputs(vehicle, false)
 
     }
 
-    // Try auto connecting to MissionPlanner
-    // connect("ws://127.0.0.1:56781", true) IB commented outs
-
 }
+
 
 //IB Setup manager button in menu widget, this handles multiple vehicle management and selection
 function setup_manager(button_svg) {
@@ -345,6 +345,8 @@ function setup_manager(button_svg) {
     })
 
 }
+
+
 
 // Get the details of the passed in widget for copy or save
 function get_widget_object(widget) {

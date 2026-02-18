@@ -54,15 +54,7 @@ class WidgetCustomHTML extends WidgetBase {
     const mavlinkChannel = new BroadcastChannel("MAVLinkMSG")
     mavlinkChannel.onmessage = (e) => {
         if (e?.data?.MAVLink) {
-            const msg = e.data.MAVLink;
-
-            //IB if only one vehicle, simply handle that message
-            if (parent.selectVehicle == null) {
-                //IB do nothing
-            } else if (msg._vehicleID == parent.selectVehicle.id) {             
-                //IB only allow selected vehicle messages to be handled
-                handle_MAVLink(msg);
-            }
+            handle_MAVLink(e.data.MAVLink);    
         }
     }
         

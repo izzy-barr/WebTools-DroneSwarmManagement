@@ -1,13 +1,11 @@
 console.log('MultiVeh.js loaded')
 
 window.vehicleMap = new Map()
-
 window.createVehicle = function (vehicle, vehicleID) {
     if (!window.vehicleMap.has(vehicleID)) {
         window.vehicleMap.set(vehicleID, vehicle)
     }
 }
-
 
 class mavVehicle {
     constructor(rowEl, id) {
@@ -15,8 +13,15 @@ class mavVehicle {
         this.id = id;
         this.set_querySelectors();
         this.MAVLink = new MAVLink20Processor();
+        this.expecting_close = false;
+        this.been_connected = false;
         this.target = null;
         this.ws = null;
+        this.colour = "black";
+    }
+    
+    set_name() {
+        this.name = this.userVehicleName.value;
     }
 
     // Points query selectors to respective elements in row
@@ -26,11 +31,6 @@ class mavVehicle {
         this.removeBtn = this.rowEl.querySelector(`input[id="remove${this.id}"]`);
         this.connectBtn = this.rowEl.querySelector(`input[id="connect${this.id}"]`);
         this.disconnectBtn = this.rowEl.querySelector(`input[id="disconnect${this.id}"]`);
-    }
-
-    // Sets colour depending on connection status
-     set_colour(colour) {
-        this.colour = colour;
     }
 
     // Sets the websocket to the value the input
@@ -72,11 +72,6 @@ class mavVehicle {
                 }
             }
         }
-    }
-
-
-    set_name() {
-        this.name = this.userVehicleName.value;
     }
 
     remove_ws() {
