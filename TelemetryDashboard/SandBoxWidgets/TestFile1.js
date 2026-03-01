@@ -8,18 +8,15 @@ const formioCcs = document.createElement("link")
 formioCcs.rel = "stylesheet"
 formioCcs.href = "https://cdn.form.io/formiojs/formio.full.min.css"
 document.body.appendChild(formioCcs)
-
+const tippyCcs = document.createElement("link")
+tippyCcs.rel = "stylesheet"
+tippyCcs.href = "https://unpkg.com/tippy.js@6/dist/tippy.css"
+document.body.appendChild(tippyCcs)
 
 // Import leaflet
 const script = document.createElement("script")
 script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 document.body.appendChild(script)  
-
-//IB add tippy ccs
-const tippyCcs = document.createElement("link")
-tippyCcs.rel = "stylesheet"
-tippyCcs.href = "https://unpkg.com/tippy.js@6/dist/tippy.css"
-document.body.appendChild(tippyCcs)
 
 //IB add popper and tippy scripts
 const popperScript = document.createElement("script")
@@ -65,7 +62,7 @@ function init() {
     document.body.appendChild(rotation_helper)
 
     //IB init tippy
-    setTimeout(init_vehicle_info, 100)
+    //init_vehicle_info()
 }
 
 // Try init in 0.1 seconds, this give time for the added scripts to load
@@ -92,6 +89,11 @@ const vehicleTypeConfig = {
 };
 
 function vehicle_init(id, location, type) {
+
+    //IB load vehicle popup 
+    if (!window.tip) {
+        init_vehicle_info()
+    }
 
     //IB Select icon depending on type of vehicle
     const template = vehicleTypeConfig[type].template || 'generic_icon_template';
@@ -383,6 +385,13 @@ const tip_div = document.createElement("div")
 //IB Setup vehicle info widget from vehicles in map
 function init_vehicle_info() {
     console.log('init_vehicle_info called')
+    
+    // Make sure Tippy is loaded
+    if (!tippy) {
+        // try again
+        setTimeout(init_vehicle_info, 100)
+        return
+    }
 
     tip_div.appendChild(document.importNode(document.getElementById('vehicle_info_tip_template').content, true))
     //IB size widget to max at hieght of widget
