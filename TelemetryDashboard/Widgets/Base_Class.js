@@ -169,14 +169,6 @@ class WidgetBase extends HTMLElement {
             e.stopPropagation()
         }
 
-        //IB Listen for vehicle selected on map event to show vehicle info
-       if (this.about.name == "Map") {
-            window.addEventListener("vehicleSelectedOnMap", (e) => {
-                const { id, x, y, msg } = e.detail
-
-                this.setup_vehicle_info(x, y, msg)
-            })
-        }
     }
 
     //IB adding Vehicle Selector to schema
@@ -206,7 +198,7 @@ class WidgetBase extends HTMLElement {
 
         let allowMultiple = false;
 
-        if (this.about.name == "Map") {
+        if (this.about.name == "Map" || this.about.name == "Graph") {
             allowMultiple = true;
         } else allowMultiple = false;
 
@@ -262,198 +254,6 @@ class WidgetBase extends HTMLElement {
         comp.redraw()
     }
 
-    //IB Setup vehicle info widget from vehicles in map
-    setup_vehicle_info(x, y, msg) {
-        console.log('setup_vehicle_info called')
-
-        const tip_div = document.createElement("div")
-        tip_div.appendChild(document.importNode(document.getElementById('vehicle_info_tip_template').content, true))
-
-        const tip = tippy(document.body, {
-            content: tip_div,
-            interactive: true,
-            trigger: 'manual',
-            maxWidth: "1000px",
-            appendTo: () => document.body,
-            getReferenceClientRect: () => ({
-                width: 0,
-                height: 0,
-                top: y,
-                bottom: y,
-                left: x,
-                right: x,
-            }),
-            popperOptions: {
-                strategy: 'fixed',
-                modifiers: [
-                    {
-                    name: 'flip',
-                    options: {
-                        fallbackPlacements: ['bottom', 'right'],
-                    },
-                    },
-                    {
-                    name: 'preventOverflow',
-                    options: {
-                        altAxis: true,
-                        tether: false,
-                    },
-                    },
-                ],
-            },
-        })
-
-        tip_div.querySelector(`b[id="vehicle_name"]`).innerHTML = parent.vehicleMap.get(msg._vehicleID).name
-        tip_div.querySelector(`b[id="vehicle_ws"]`).innerHTML = parent.vehicleMap.get(msg._vehicleID).target
-
-        const div = tip_div.querySelector(`div[id="MAVLink_inspector"]`)
-        this.setup_mavlink_inspector(msg, div)
-        tip.show()
-
-        // Close button
-        tip_div.querySelector(`svg[id="Close"]`).onclick = () => {
-            tip.hide()
-                            }
-    }
-
-    //IB MAVLink Inspector setup
-    setup_mavlink_inspector(msg, div) {
-        console.log('setup_mavlink_inspector called')
-
-        // Build component ID lookup
-        let comp_id = {}
-        
-        for (const [key, value] of Object.entries(mavlink20)) {
-            if (key.startsWith("MAV_COMP_ID")) {
-                comp_id[value] = key    
-            }
-        }
-        
-        // Use flex to allow the tree to take up the remaining space
-        div.style.display = "flex"
-        div.style.flexDirection = "column"
-        
-        // Add a div to hold the tree
-        const tree_div = document.createElement("div")
-        tree_div.style.height = "100%"
-        div.appendChild(tree_div)
-        
-        // Allow scrolling if needed
-        tree_div.style.overflow = "auto"
-        
-        // List for any system IDs
-        let ids = {}
-                    
-        // Create a new details elememnt with summary
-        function create_details(summary_text, indent = false, open = true) {
-            
-            // Create new details item
-            const details = document.createElement("details")
-                        
-            // Add text
-            const summary = document.createElement("summary")
-            summary.appendChild(document.createTextNode(summary_text))
-            details.appendChild(summary)
-            
-            if (indent) {
-                details.style.marginLeft = "1em"
-            }
-            
-            details.open = open
-                            
-            return details
-        }
-                                
-        // Add a new item to a tree
-        function add_to_tree(tree, id, parent, item) {
-            
-            // Find any existing id that should come before this one
-            let prior_item = null
-            for (const existing_id of Object.keys(tree)) {
-                if (parseInt(existing_id) < id) {
-                    prior_item = tree[existing_id]
-                }
-            }
-                                        
-            if (prior_item == null) {
-                // No prior element, add to start of tree
-                parent.append(item)
-            } else {
-                // Add affter the prior element
-                prior_item.ele.after(item)
-            }
-                                                    
-            tree[id] = { ele: item, content: {} }
-        }
-                                                                            
-        // Runtime function
-        function handle_msg(msg) {    
-            const id = msg._header.srcSystem
-            const comp = msg._header.srcComponent
-            const msg_id = msg._id
-                    
-            // Add new ID to tree if not already there
-            if (!(id in ids)) {
-                add_to_tree(ids, id, tree_div, create_details("System ID: " + id))
-            }
-                            
-            const id_branch = ids[id]
-                            
-            // Add new component to tree if not already there
-            if (!(comp in id_branch.content)) {
-                let comp_str = "Component ID:" + comp
-                if (comp in comp_id) {
-                    comp_str += " " + comp_id[comp]
-                }
-                add_to_tree(id_branch.content, comp, id_branch.ele, create_details(comp_str, true))
-            }
-                    
-            const component_branch = id_branch.content[comp]
-                                                                                
-            // Add new message to tree if not already there
-                                                                                
-            if (!(msg_id in component_branch.content)) {
-                let msg_str
-                let type = null
-                
-                if (msg_id in mavlink20.map) {
-                    type = new mavlink20.map[msg_id].type
-                    msg_str = type._name + " (" + msg_id + ")"
-                } else {
-                    msg_str = "" + msg_id
-                }
-                
-                add_to_tree(component_branch.content, msg_id, component_branch.ele, create_details(msg_str, true, false))
-                
-                const msg_item = component_branch.content[msg_id]
-                msg_item.type = type
-                                                                                                                    
-                if (type != null) {
-                    // Add line for each field
-                    for (const field of type.fieldnames) {
-                        const line = document.createElement("li")
-                        line.style.marginLeft = "1em"
-                        line.appendChild(document.createTextNode(field + ": "))
-                        msg_item.ele.appendChild(line)
-                        const value = document.createTextNode("?")
-                        line.appendChild(value)
-                        msg_item.content[field] = value
-                    }
-                }  
-            }
-                            
-            // Update the field values
-            const msg_item = component_branch.content[msg_id]
-            if (msg_item.type != null) {
-                for (const [field, text] of Object.entries(msg_item.content)) {
-                    text.nodeValue = msg[field]   
-                } 
-            }                     
-        }
-
-        handle_msg(msg)
-    }
-
     // Enable or disable editing
     set_edit(b) {
         this.edit_enabled = b
@@ -502,7 +302,6 @@ class WidgetBase extends HTMLElement {
         this.tippy_div.querySelector(`div[id="form"]`).style.display = have_content ? "block" : "none"
 
     }
-
 
     // Update form definition
     set_form_definition(new_def) {

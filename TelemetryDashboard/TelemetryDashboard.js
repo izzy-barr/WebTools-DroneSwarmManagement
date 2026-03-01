@@ -120,7 +120,7 @@ function setup_connect(button_svg, button_color) {
 
         const vehicle = new mavVehicle(row, id);
 
-        vehicle.colour = "black"
+        vehicle.colour = randColour()
         console.log(vehicle.colour)
         
         window.createVehicle(vehicle, id);
@@ -202,7 +202,6 @@ function setup_connect(button_svg, button_color) {
 
         // Set orange for connecting
         button_color("orange")
-        vehicle.colour = "orange"
 
         // True if we have ever been connected
         vehicle.been_connected = false
@@ -213,7 +212,6 @@ function setup_connect(button_svg, button_color) {
             console.log('we have open!')
 
             button_color("green")
-            vehicle.colour = "green"
 
             // Set input to current value
             vehicle.webSocketURL.value = vehicle.target
@@ -228,12 +226,10 @@ function setup_connect(button_svg, button_color) {
             if ((auto_connect === true) && !vehicle.been_connected) {
                 // Don't show a failed connection if this is a auto connection attempt which failed
                 button_color("black")
-                vehicle.colour = "black"
 
             } else if (!vehicle.expecting_close) {
                 // Don't show red if the user manually disconnected
                 button_color("red")
-                vehicle.colour = "red"
             }
 
             // Enable connect buttons
@@ -254,11 +250,16 @@ function setup_connect(button_svg, button_color) {
 
         // Return button to black
         button_color("black")      
-        vehicle.colour = "black"
 
         // Enable connect buttons
         set_inputs(vehicle, false)
 
+    }
+
+    function randColour() {
+        console.log('Randome colour called')
+        const colour =  '#' + (0x1000000+Math.random()*0xffffff).toString(16).substr(1,6)
+        return colour
     }
 
 }
@@ -633,6 +634,12 @@ async function load_file(e) {
 
     // Clear file input so the same file can be loaded a second time
     e.value = null
+
+    //IB clear vehicleMap to reset inputs
+    window.vehicleMap.forEach((vehicle) => {
+        vehicle.remove_ws();
+    })
+    window.vehicleMap.clear();
 }
 
 // Pallet for user to add widgets
@@ -683,7 +690,7 @@ function init_pallet() {
         const sandbox_files = [
             { path: "SandBoxWidgets/Attitude.json", pos: { x: 1, y: 0, w: 2, h: 2 } },
             { path: "SandBoxWidgets/Graph.json",    pos: { x: 3, y: 0, w: 3, h: 2 } },
-            { path: "SandBoxWidgets/Map.json", pos: { x: 0, y: 2, w: 2, h: 2 } },
+            { path: "SandBoxWidgets/Map.json",  pos: { x: 0, y: 2, w: 2, h:2 } },
             { path: "SandBoxWidgets/MAVLink_Inspector.json", pos: { x: 2, y: 2, w: 2, h: 2 } },
             { path: "SandBoxWidgets/Messages.json", pos: { x: 4, y: 2, w: 2, h: 2 } },
             { path: "SandBoxWidgets/Value.json", pos: { x: 0, y: 4, w: 1, h: 1 } },

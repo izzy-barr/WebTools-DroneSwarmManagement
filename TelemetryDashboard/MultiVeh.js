@@ -17,7 +17,8 @@ class mavVehicle {
         this.been_connected = false;
         this.target = null;
         this.ws = null;
-        this.colour = "black";
+        this.colour = null;
+        this.type = null;
     }
     
     set_name() {
@@ -69,6 +70,9 @@ class mavVehicle {
                     m._vehicleID = this.id;
                     m._colour = this.colour;
                     mavlinkChannel.postMessage({ MAVLink: m })
+                    if (this.type == null && m._id === 0) {
+                        this.type = m.type
+                    }
                 }
             }
         }
