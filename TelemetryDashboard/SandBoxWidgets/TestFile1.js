@@ -411,6 +411,7 @@ function init_vehicle_info() {
     }
 
     tip_div.appendChild(document.importNode(document.getElementById('vehicle_info_tip_template').content, true))
+    
     //IB size widget to max at hieght of widget
     tip_div.style.display = "flex"
     tip_div.style.flexDirection = "column"
@@ -527,7 +528,6 @@ function init_mavlink_inpsector(div) {
     tree_div.style.minHeight = "0"//IB
     tree_div.style.flex = "1"//IB
 
-div.appendChild(tree_div)
 }
 
 //IB part of mavlink inspector

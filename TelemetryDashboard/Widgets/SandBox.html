@@ -269,6 +269,15 @@
 
     }
 
+    //IB change border colour according to selected vehicle's colour change
+    parent.addEventListener('vehicleColourChanged', e => {
+        const { vehicleID, colour } = e.detail;
+        console.log('got colour event', vehicleID, colour);
+
+        if (selected == vehicleID) {
+            user_div.style.borderColor = parent.vehicleMap.get(selected).colour
+        }
+    });
 
     window.addEventListener('message', function (e) {
         const data = e.data
