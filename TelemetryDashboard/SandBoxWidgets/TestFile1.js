@@ -88,7 +88,7 @@ const vehicleTypeConfig = {
     12: { template: 'anchor_icon_template',         offset: -180 }
 };
 
-function vehicle_init(id, location, type) {
+function vehicle_init(id, location, type, colour) {
 
     //IB load vehicle popup 
     if (!window.tip) {
@@ -113,6 +113,8 @@ function vehicle_init(id, location, type) {
         interactive: true //IB change
     }).addTo(map)
 
+    change_colour(marker._icon, colour)
+
     //IB add onClick to pop up VehicleInfo
     marker.on("click", (e) => {
         clickedVehicle = vehicle[id]._vehicleID //IB
@@ -132,6 +134,21 @@ function vehicle_init(id, location, type) {
 
 }
 
+//IB change icon colour
+function change_colour(icon, colour) {
+    if (!icon) {
+        return;
+    }
+
+    const iconSvg = icon.querySelector('svg');
+    if (iconSvg) {
+        const iconPath = iconSvg.querySelector('path');
+        if (iconPath) {
+            iconPath.setAttribute('fill', colour);
+        }
+    }
+}
+
 // Update the position of a vehicle
 function update_pos(msg) {
 
@@ -142,7 +159,7 @@ function update_pos(msg) {
 
     // Make sure vehicle has been setup
     if (vehicle[id] == null) {
-        vehicle_init(id, location, type) //IB add type
+        vehicle_init(id, location, type, msg._colour) //IB add type
         vehicle[id]._vehicleID = vehID //IB
     }
 
@@ -651,6 +668,11 @@ handle_msg = function (msg) {
     //IB add mavlink inspector
     if (window.tip && window.tip.state.isVisible && clickedVehicle == msg._vehicleID) {
         update_mavlink_inspector(msg)
+    }
+
+    //IB change colour of icon
+    if (vehicle[msg._header.srcSystem]) {
+        change_colour(vehicle[msg._header.srcSystem].marker._icon, msg._colour)
     }
 }
 
