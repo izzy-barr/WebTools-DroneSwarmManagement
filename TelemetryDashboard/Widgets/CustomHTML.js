@@ -51,12 +51,13 @@ class WidgetCustomHTML extends WidgetBase {
     })
 
     // Incoming MAVLink messages
-    const broadcast = new BroadcastChannel("MAVLinkMSG")
-    broadcast.onmessage = (e) => {
+    const mavlinkChannel = new BroadcastChannel("MAVLinkMSG")
+    mavlinkChannel.onmessage = (e) => {
         if (e?.data?.MAVLink) {
-            handle_MAVLink(e.data.MAVLink)
+            handle_MAVLink(e.data.MAVLink);    
         }
     }
+        
 </script>
 </html>
 `

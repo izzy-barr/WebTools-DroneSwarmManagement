@@ -1,4 +1,6 @@
-// Setup connect button in menu widget, this handles WebSocket and incoming MAVLink
+
+
+    // Setup connect button in menu widget, this handles WebSocket and incoming MAVLink
 function setup_connect(button_svg, button_color) {
 
     console.log('MultiVeh loaded', window.createVehicle)
@@ -11,6 +13,7 @@ function setup_connect(button_svg, button_color) {
         trigger: 'manual',
         maxWidth: "1000px",
         appendTo: () => document.body,
+        placement: 'bottom', //IB
         popperOptions: {
             strategy: 'fixed',
             modifiers: [
@@ -49,15 +52,9 @@ function setup_connect(button_svg, button_color) {
 
 
     //IB Define Buttons 
-    let activeVehicle = null;
     const add_button = tip_div.querySelector('input[id="add_button"]')
-    const connect_button = tip_div.querySelector(`input[id="connection_button"]`)
-    const disconnect_button = tip_div.querySelector(`input[id="disconnection_button"]`)
     const form = tip_div.querySelector('div[id="form"]')
 
-    // Websocket object
-    let expecting_close = false
-    let been_connected = false
 
     //IB Create new websocket input
     function addURL(idNum) {
@@ -87,30 +84,51 @@ function setup_connect(button_svg, button_color) {
         return remove;
     }
 
+    function addConnect(idNum) {
+        const connect = document.createElement('input');
+        connect.id = 'connect' + idNum;
+        connect.type = 'button';
+        connect.value = 'Connect';
+        return connect;
+    }
+
+    function addDisconnect(idNum) {
+        const disconnect = document.createElement('input');
+        disconnect.id = 'disconnect' + idNum;
+        disconnect.type = 'button';
+        disconnect.value = 'Disconnect';
+        return disconnect;
+    }
+
     //IB Add inputs on button click
     add_button.onclick = () => {
         console.log('Add button clicked')
 
         const id = crypto.randomUUID();
         const newRemove = addRemove(id);
+        const newConnect = addConnect(id);
+        const newDisconnect = addDisconnect(id);
         const row = document.createElement('div');
         row.className = 'vehicleRow';
 
         row.appendChild(addURL(id));
         row.appendChild(addName(id));
+        row.appendChild(newConnect);
+        row.appendChild(newDisconnect);
         row.appendChild(newRemove);
         form.appendChild(row);
 
-
-
         const vehicle = new mavVehicle(row, id);
 
+        vehicle.colour = randColour()
+        console.log(vehicle.colour)
+        
         window.createVehicle(vehicle, id);
 
         newRemove.onclick = () => {
             console.log('remove button clicked')
 
-            const vehicle = vehicleMap.get(id);
+            const vehicle = window.vehicleMap.get(id);
 
             if (!vehicle) {
                 console.log('No vehicle of that id')
@@ -122,30 +140,51 @@ function setup_connect(button_svg, button_color) {
             }
 
             vehicle.remove_ws();
-            vehicleMap.delete(id);
+            window.vehicleMap.delete(id);
+        }
+            
 
+        newConnect.onclick = () => {
+            console.log('newConnect clicked')
+        
+            const in_progress = (vehicle.ws != null) && ((vehicle.ws.readyState == WebSocket.CONNECTING) || (vehicle.ws.readyState == WebSocket.CLOSING))
+            if (in_progress) {
+                // Don't do anything if the socket is connecting or closing a connection
+                return
+            }
+
+            if (!vehicle.webSocketURL.checkValidity()) {
+                // Invalid address, re-fire the tip and focus the url
+                tip.show()
+                vehicle.webSocketURL.focus()
+                return
+            }
+
+            connect(vehicle)
         }
 
-        activeVehicle = vehicle;
+        newDisconnect.onclick = () => {
+            console.log('newDisconnect clicked')
 
-        set_inputs(false)
-    }
-    
+            if ((vehicle.ws != null) && (vehicle.ws.readyState == WebSocket.CLOSING)) {
+                // Don't do anything if the socket is already or closing a connection
+                return
+            }
 
-    function set_inputs(connected) {
-        // Disable connect button and url input, enable disconnect button
-        connect_button.disabled = connected
-        disconnect_button.disabled = !connected
-        if (activeVehicle === null) {
-            return
-        } else {
-            activeVehicle.webSocketURL.disabled = connected //IB part change
-            activeVehicle.userVehicleName.disabled = connected //IB
-            activeVehicle.removeBtn.disabled = connected //IB
+            disconnect(vehicle)
         }
+
+        set_inputs(vehicle, false)
     }
 
-    set_inputs(false)
+    function set_inputs(vehicle, connected) { //IB added vehicle parameter to set inputs for specific vehicle
+        // Disable connect button, remove button and url input, enable disconnect button
+        vehicle.webSocketURL.disabled = connected //IB part change
+        vehicle.userVehicleName.disabled = connected //IB
+        vehicle.removeBtn.disabled = connected //IB
+        vehicle.connectBtn.disabled = connected //IB
+        vehicle.disconnectBtn.disabled = !connected //IB
+    }
 
     // Connect to WebSocket server
     function connect(vehicle, auto_connect) { 
@@ -159,48 +198,42 @@ function setup_connect(button_svg, button_color) {
         vehicle.set_name();
 
         // Can't connect twice
-        set_inputs(true)
+        set_inputs(vehicle, true)
 
         // Set orange for connecting
         button_color("orange")
 
         // True if we have ever been connected
-        been_connected = false
-        expecting_close = false
+        vehicle.been_connected = false
+        vehicle.expecting_close = false
 
         //IB addEventListeners for Open and Close of websockets, nb no 'error' or 'message' here since it is independent of TelemetryDashboard.js
         vehicle.ws.addEventListener('open', () => {
             console.log('we have open!')
 
             button_color("green")
-            
-            // Hide tip
-            tip.hide()
-
-            // Allow disconnect
-            disconnect_button.disabled = false
 
             // Set input to current value
             vehicle.webSocketURL.value = vehicle.target
 
             // Have been connected
-            been_connected = true
+            vehicle.been_connected = true
         })
 
         vehicle.ws.addEventListener('close', () => {
             console.log('we have close!')
 
-            if ((auto_connect === true) && !been_connected) {
+            if ((auto_connect === true) && !vehicle.been_connected) {
                 // Don't show a failed connection if this is a auto connection attempt which failed
                 button_color("black")
 
-            } else if (!expecting_close) {
+            } else if (!vehicle.expecting_close) {
                 // Don't show red if the user manually disconnected
                 button_color("red")
             }
 
             // Enable connect buttons
-            set_inputs(false)
+            set_inputs(vehicle, false)
 
         })
 
@@ -210,60 +243,27 @@ function setup_connect(button_svg, button_color) {
     function disconnect(vehicle) {
         console.log('disconnect function called')
         // Close socket
-        if (activeVehicle.ws != null) {
-            expecting_close = true
-            activeVehicle.ws.close()
+        if (vehicle.ws != null) {
+            vehicle.expecting_close = true
+            vehicle.ws.close()
         }
 
         // Return button to black
-        button_color("black")        
+        button_color("black")      
 
         // Enable connect buttons
-        set_inputs(false)
+        set_inputs(vehicle, false)
 
     }
 
-
-    connect_button.onclick = () => {
-        console.log('Connect button clicked')
-
-        //IB Check for activeVehicle
-        if (!activeVehicle) {
-            console.error('No active vehicle');
-            return
-        }
-        
-        const in_progress = (activeVehicle.ws != null) && ((activeVehicle.ws.readyState == WebSocket.CONNECTING) || (activeVehicle.ws.readyState == WebSocket.CLOSING))
-        if (in_progress) {
-            // Don't do anything if the socket is connecting or closing a connection
-            return
-        }
-
-        if (!activeVehicle.webSocketURL.checkValidity()) {
-            // Invalid address, re-fire the tip and focus the url
-            tip.show()
-            activeVehicle.webSocketURL.focus()
-            return
-        }
-
-        connect(activeVehicle)
-
+    function randColour() {
+        console.log('Randome colour called')
+        const colour =  '#' + (0x1000000+Math.random()*0xffffff).toString(16).substr(1,6)
+        return colour
     }
-
-    disconnect_button.onclick = () => {
-
-        if ((activeVehicle.ws != null) && (activeVehicle.ws.readyState == WebSocket.CLOSING)) {
-            // Don't do anything if the socket is already or closing a connection
-            return
-        }
-
-        disconnect(activeVehicle)
-    }
-
-    // Try auto connecting to MissionPlanner
-    // connect("ws://127.0.0.1:56781", true) IB commented outs
 
 }
+
 
 //IB Setup manager button in menu widget, this handles multiple vehicle management and selection
 function setup_manager(button_svg) {
@@ -346,6 +346,8 @@ function setup_manager(button_svg) {
     })
 
 }
+
+
 
 // Get the details of the passed in widget for copy or save
 function get_widget_object(widget) {
@@ -632,6 +634,12 @@ async function load_file(e) {
 
     // Clear file input so the same file can be loaded a second time
     e.value = null
+
+    //IB clear vehicleMap to reset inputs
+    window.vehicleMap.forEach((vehicle) => {
+        vehicle.remove_ws();
+    })
+    window.vehicleMap.clear();
 }
 
 // Pallet for user to add widgets
@@ -682,7 +690,7 @@ function init_pallet() {
         const sandbox_files = [
             { path: "SandBoxWidgets/Attitude.json", pos: { x: 1, y: 0, w: 2, h: 2 } },
             { path: "SandBoxWidgets/Graph.json",    pos: { x: 3, y: 0, w: 3, h: 2 } },
-            { path: "SandBoxWidgets/Map.json", pos: { x: 0, y: 2, w: 2, h: 2 } },
+            { path: "SandBoxWidgets/Map.json",  pos: { x: 0, y: 2, w: 2, h:2 } },
             { path: "SandBoxWidgets/MAVLink_Inspector.json", pos: { x: 2, y: 2, w: 2, h: 2 } },
             { path: "SandBoxWidgets/Messages.json", pos: { x: 4, y: 2, w: 2, h: 2 } },
             { path: "SandBoxWidgets/Value.json", pos: { x: 0, y: 4, w: 1, h: 1 } },

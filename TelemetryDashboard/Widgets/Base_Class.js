@@ -87,10 +87,12 @@ class WidgetBase extends HTMLElement {
 
         // Add form
         const form_div = this.tippy_div.querySelector(`div[id="form"]`)
+        form_definition = this.add_vehicleSelector(form_definition) //IB add vehicle selector to all widget form definitions
+
         Formio.createForm(form_div, form_definition).then((form) => {
             // Populate form object and add changed callback
             this.form = form
-
+            
             // Load form
             this.form.setForm(form_definition).then(() => {
 
@@ -156,6 +158,9 @@ class WidgetBase extends HTMLElement {
         })
 
         this.ondblclick = (e) => {
+
+            this.updateVehicleSelect() //IB update vehicle selector according to options in vehicle
+
             if (this.edit_enabled) {
                 this.edit_tip.show()
             }
@@ -164,6 +169,89 @@ class WidgetBase extends HTMLElement {
             e.stopPropagation()
         }
 
+    }
+
+    //IB adding Vehicle Selector to schema
+    add_vehicleSelector(schema) {
+        console.log('add_vehicleSelector called')
+
+        if (!schema || !schema.components) {
+            console.log('No schema or components found, returning original schema')
+            return schema
+        }
+
+        let currentEntries = this.get_mapEntries()
+
+        // Try to find existing selector
+        const existingComponent = schema.components.find(
+            comp => comp.key === "vehicleID"
+        )
+
+        if (existingComponent) {
+            console.log('Vehicle selector exists — updating values')
+
+            existingComponent.data.values = currentEntries
+            return schema
+        }
+
+        console.log('Vehicle selector does not exist — creating it')
+
+        let allowMultiple = false;
+
+        if (this.about.name == "Map" || this.about.name == "Graph") {
+            allowMultiple = true;
+        } else allowMultiple = false;
+
+        schema.components.unshift({
+            type: "select",
+            label: "Select Vehicle",
+            key: "vehicleID",
+            input: true,
+            tableView: true,
+            multiple: allowMultiple,
+            dataSrc: "values",
+            data: {
+                values: currentEntries
+            }
+        })
+
+        return schema
+    }
+
+    //IB Get entries for select vehicle dropdown menu according to connected websockets
+    get_mapEntries() {
+        console.log('get_mapEntries called')
+        if (!vehicleMap || vehicleMap.size === 0) {
+            console.log('vehicleMap is empty')
+            return []
+        }
+
+        console.log('not empty', vehicleMap)
+
+        return [...vehicleMap.values()]
+            .filter(vehicle => vehicle.connectBtn?.disabled == true) // Only include connected vehicles
+            .map(vehicle => ({
+                label: vehicle.name,
+                value: vehicle.id
+            }))
+    }
+
+     //IB update select Vehicle options in dropdown menu according to connected websockets
+    updateVehicleSelect() {
+        console.log('updateVehicleSelect called')
+        if (!this.form) {
+            return
+        }
+
+        const comp = this.form.getComponent("vehicleID")
+        if (!comp) {
+            return
+        }
+
+        const values = this.get_mapEntries()
+
+        comp.component.data.values = values
+        comp.redraw()
     }
 
     // Enable or disable editing
@@ -177,7 +265,6 @@ class WidgetBase extends HTMLElement {
     get_about() {
         return this.about
     }
-
     
     // Get edit text type
     get_edit_language() { }
@@ -215,7 +302,6 @@ class WidgetBase extends HTMLElement {
         this.tippy_div.querySelector(`div[id="form"]`).style.display = have_content ? "block" : "none"
 
     }
-
 
     // Update form definition
     set_form_definition(new_def) {
