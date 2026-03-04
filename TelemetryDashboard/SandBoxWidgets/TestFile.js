@@ -71,18 +71,18 @@ let clickedVehicle = null //IB
 
 //IB Create vehicle type configuration
 const vehicleTypeConfig = {
-    1:  { template: 'plane_icon_template',          offset: -90 },
-    2:  { template: 'copter_icon_template',         offset: 45 },
-    3:  { template: 'helicopter_icon_template',     offset: -90 },
-    4:  { template: 'helicopter_icon_template',     offset: -90 },
-    5:  { template: 'antennaTracker_icon_template', offset: -90 },
-    6:  { template: 'gcs_icon_template',            offset: -90 },
-    7:  { template: 'balloon_icon_template',        offset: -90 },
-    8:  { template: 'balloon_icon_template',        offset: -90 },
+    1:  { template: 'plane_icon_template',          offset: 90 },
+    2:  { template: 'copter_icon_template',         offset: 0 },
+    3:  { template: 'helicopter_icon_template',     offset: 90 },
+    4:  { template: 'helicopter_icon_template',     offset: 90 },
+    5:  { template: 'antennaTracker_icon_template', offset: 0 },
+    6:  { template: 'gcs_icon_template',            offset: 0 },
+    7:  { template: 'blimp_icon_template',          offset: 0 },
+    8:  { template: 'balloon_icon_template',        offset: 0 },
     9:  { template: 'rocket_icon_template',         offset: 45 },
-    10: { template: 'rover_icon_template',          offset: -180 },
-    11: { template: 'boat_icon_template',           offset: -180 },
-    12: { template: 'anchor_icon_template',         offset: -180 }
+    10: { template: 'rover_icon_template',          offset: 0 },
+    11: { template: 'boat_icon_template',           offset: 0 },
+    12: { template: 'sub_icon_template',            offset: 0 }
 };    
     
 function vehicle_init(id, location, type, colour) {
@@ -91,7 +91,7 @@ function vehicle_init(id, location, type, colour) {
         init_vehicle_info()
     }
     //IB Select icon depending on type of vehicle
-    const template = vehicleTypeConfig[type].template || 'generic_icon_template' ;
+    const template = vehicleTypeConfig[type]?.template ?? 'generic_icon_template'
 
     //IB create icons
     const icon = L.divIcon({
@@ -161,7 +161,7 @@ function update_pos(msg) {
     
     // Update marker
     if ("setRotationAngle" in vehicle[id].marker) {
-        const offset = vehicleTypeConfig[type].offset || 0 //IB select offset
+        const offset = vehicleTypeConfig[type]?.offset ?? 0 //IB select offset
         vehicle[id].marker.setRotationAngle(heading - offset)
     }
 
