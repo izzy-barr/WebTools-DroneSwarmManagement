@@ -57,6 +57,14 @@ class mavVehicle {
         }
 
         this.ws.onclose = (e) => {
+            // create custom event for widgets to listen for disconnect
+            const evt = new CustomEvent('vehicleDisconnect', {
+                detail: { vehicleID: this.id }
+            })
+            
+            window.dispatchEvent(evt)
+            console.log('evt dispatched', evt)
+
             console.error('ws.onclosed called ' + this.target, e.code, e.reason)
         }
 

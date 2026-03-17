@@ -169,11 +169,16 @@ class WidgetBase extends HTMLElement {
             e.stopPropagation()
         }
 
+        //IB Listen for primary vehicle to be selected
+        parent.addEventListener('primarySelectVehicle', e => {
+            const primaryVehicleID = e.detail.vehicleID
+            this.primaryVehicleSelector(primaryVehicleID)
+    })
+
     }
 
     //IB adding Vehicle Selector to schema
     add_vehicleSelector(schema) {
-        console.log('add_vehicleSelector called')
 
         if (!schema || !schema.components) {
             console.log('No schema or components found, returning original schema')
@@ -188,13 +193,12 @@ class WidgetBase extends HTMLElement {
         )
 
         if (existingComponent) {
-            console.log('Vehicle selector exists — updating values')
 
             existingComponent.data.values = currentEntries
             return schema
         }
 
-        console.log('Vehicle selector does not exist — creating it')
+
 
         let allowMultiple = false;
 
@@ -212,7 +216,7 @@ class WidgetBase extends HTMLElement {
             dataSrc: "values",
             data: {
                 values: currentEntries
-            }
+            },
         })
 
         return schema
@@ -220,25 +224,38 @@ class WidgetBase extends HTMLElement {
 
     //IB Get entries for select vehicle dropdown menu according to connected websockets
     get_mapEntries() {
-        console.log('get_mapEntries called')
         if (!vehicleMap || vehicleMap.size === 0) {
-            console.log('vehicleMap is empty')
             return []
         }
 
-        console.log('not empty', vehicleMap)
-
         return [...vehicleMap.values()]
-            .filter(vehicle => vehicle.connectBtn?.disabled == true) // Only include connected vehicles
+            .filter(vehicle => vehicle.ws && vehicle.ws.readyState === WebSocket.OPEN) // Only include connected vehicles
             .map(vehicle => ({
                 label: vehicle.name,
                 value: vehicle.id
             }))
     }
 
+    //IB set default option to primary vehicle selected
+    primaryVehicleSelector(id) {
+         console.log('evt dispatch select veh')
+
+        if (!this.form) return
+
+        const comp = this.form.getComponent("vehicleID")
+        if (!comp) return
+
+        //const primaryVehicle = parent.window.selectVehicle.id
+        comp.setValue(id)
+
+        this.form.triggerChange()
+        
+    }
+
      //IB update select Vehicle options in dropdown menu according to connected websockets
     updateVehicleSelect() {
         console.log('updateVehicleSelect called')
+
         if (!this.form) {
             return
         }
@@ -249,9 +266,90 @@ class WidgetBase extends HTMLElement {
         }
 
         const values = this.get_mapEntries()
+        const validValues = values.map(v => v.value)
+
+        // update dropdown options
+        comp.component.data.values = values
+        comp.redraw()
+
+        // get current value from the component itself (more reliable)
+        const currentValue = comp.getValue()
+        let newValue = currentValue
+
+        if (comp.component.multiple) {
+
+            if (Array.isArray(currentValue)) {
+                newValue = currentValue.filter(v => validValues.includes(v))
+            } else {
+                newValue = []
+            }
+
+        } else {
+            if (!validValues.includes(currentValue)) {
+                newValue = null
+            }
+
+        }
+
+        // only update if changed
+        /*if (JSON.stringify(newValue) !== JSON.stringify(currentValue)) {
+            //comp.setValue(newValue, { modified: true })
+            comp.setValue(newValue)
+        }
+
+        comp.resetValue()*/
+
+        if (JSON.stringify(newValue) !== JSON.stringify(currentValue)) {
+
+            comp.setValue(newValue, {
+                modified: true,
+                noValidate: true
+            })
+
+            // force form-wide change propagation
+            this.form.triggerChange()
+        //this.form.setSubmission(this.form.submission)
+
+        }
+
+        
+        /*       console.log('updateVehicleSelect called')
+        if (!this.form) {
+            return
+        }
+
+        const comp = this.form.getComponent("vehicleID")
+        if (!comp) {
+            return
+        }
+        const values = this.get_mapEntries()
+        const validValues = values.map(v => v.value) //
 
         comp.component.data.values = values
         comp.redraw()
+
+        //
+        // Clear selected value if it's no longer valid
+        const currentValue = this.form.submission.data.vehicleID
+        let newValue = currentValue
+
+        if (comp.component.multiple) {
+            // For multiple select, filter out invalid values
+            if (Array.isArray(currentValue)) {
+                newValue = currentValue.filter(val => validValues.includes(val))
+            } else {
+                newValue = []
+            }
+        } else {
+            // For single select, set to null if not valid
+            if (currentValue && !validValues.includes(currentValue)) {
+                newValue = null
+            } 
+        } 
+
+        if (JSON.stringify(newValue) !== JSON.stringify(currentValue)) {
+            comp.setValue(newValue)
+        }*/
     }
 
     // Enable or disable editing

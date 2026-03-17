@@ -23,10 +23,13 @@ document.body.appendChild(script)
 //IB add popper and tippy scripts
 const popperScript = document.createElement("script")
 popperScript.src = "https://unpkg.com/@popperjs/core@2"
+popperScript.onload = () => {
+    // Only load Tippy after Popper is fully loaded
+    const tippyScript = document.createElement("script")
+    tippyScript.src = "https://unpkg.com/tippy.js@6"
+    document.body.appendChild(tippyScript)
+}
 document.body.appendChild(popperScript)
-const tippyScript = document.createElement("script")
-tippyScript.src = "https://unpkg.com/tippy.js@6"
-document.body.appendChild(tippyScript) 
 
 // Add ccs
 const ccs = document.createElement("link")
@@ -84,14 +87,14 @@ const vehicleTypeConfig = {
     11: { template: 'boat_icon_template',           offset: 0 },
     12: { template: 'sub_icon_template',            offset: 0 }
 };    
-    
-function vehicle_init(id, location, type, colour) {
+
+function vehicle_init(id, location, type, colour, vehID) {
     //IB load vehicle popup
     if (!window.tip) {
         init_vehicle_info()
     }
     //IB Select icon depending on type of vehicle
-    const template = vehicleTypeConfig[type]?.template ?? 'generic_icon_template'
+    const template = vehicleTypeConfig[type]?.template ?? 'generic_icon_template';
 
     //IB create icons
     const icon = L.divIcon({
@@ -113,9 +116,9 @@ function vehicle_init(id, location, type, colour) {
     //IB add onClick to pop up VehicleInfo
     marker.on("click", (e) => {
         clickedVehicle = vehicle[id] //IB
+        ids = {} //IB
+        tree_div.innerHTML = ""//IB
         fill_vehicle_info(clickedVehicle._vehicleID)
-        tree_div.innerHTML = null
-        init_mavlink_inpsector()
         window.tip.show() //IB
     })
 
@@ -124,7 +127,7 @@ function vehicle_init(id, location, type, colour) {
         interactive: false
     }).addTo(map)
 
-    vehicle[id] = { marker, trail }
+    vehicle[id] = { marker, trail, _vehicleID: vehID }
 
     // Center the map on the new vehicle
     map.panTo(location)
@@ -155,9 +158,8 @@ function update_pos(msg) {
 
     // Make sure vehicle has been setup
     if (vehicle[id] == null) {
-        vehicle_init(id, location, type, msg._colour) //IB add type
-    vehicle[id]._vehicleID = msg._vehicleID //IB
-    }        
+        vehicle_init(id, location, type, msg._colour, msg._vehicleID) //IB add type, colour, vehID
+    }       
     
     // Update marker
     if ("setRotationAngle" in vehicle[id].marker) {
@@ -208,6 +210,8 @@ function update_pos(msg) {
             vehicle[id].pos_target.line.setLatLngs(pos_target)
         }
     }
+
+    console.log('vehicle', vehicle)
 }
 
 // Add home to the map
@@ -235,7 +239,6 @@ function home_init(id, location) {
 function update_home(msg) {
 
     const id = msg._header.srcSystem
-
     const location = new L.LatLng(
         msg.latitude * (10 ** -7),
         msg.longitude * (10 ** -7)
@@ -481,7 +484,7 @@ function init_vehicle_info() {
         parent.selectPoppedUp = false;
     }
 
-    // Vehicle colour change
+                // Vehicle colour change
     tip_div.querySelector(`input[id="vehicle_colour"]`).onchange = () => {
         const newColour = tip_div.querySelector(`input[id="vehicle_colour"]`).value
         parent.vehicleMap.get(clickedVehicle._vehicleID).colour = newColour
@@ -494,9 +497,8 @@ function init_vehicle_info() {
                 colour: newColour
             }
         })
-        // dispatch from the parent window (the widget host) so Sandbox.html can catch it
         parent.dispatchEvent(evt)
-    }
+    }        
 
     // Send written input to console
     enterBtn.onclick = () => {
@@ -684,12 +686,12 @@ function update_mavlink_inspector(msg) {
             text.nodeValue = msg[field]   
         } 
     }
-    // ensure popup resizes after inspector update
+        // ensure popup resizes after inspector update
     if (window.requestAnimationFrame) {
         window.requestAnimationFrame(resizePopup);
     } else {
         resizePopup();
-    }
+    }        
 }
 
 // Runtime function
@@ -726,4 +728,27 @@ handle_msg = function (msg) {
 // Options changed
 handle_options = function (new_options) {
     options = new_options
+}
+
+//IB vehicle disconnect
+parent.addEventListener('vehicleDisconnect', e => {
+    const vehicleID = e.detail.vehicleID
+    console.log('vehicle Disconnect heard from map', vehicleID)
+    const vehicleDisconnected = Object.entries(vehicle).find(([key, v]) => v && v._vehicleID === vehicleID)
+    if (vehicleDisconnected) {
+        remove_vehicle(vehicleDisconnected[0])
+    } 
+})
+
+//IB remove vehicle
+function remove_vehicle(id) {
+    if (!vehicle[id]) return
+
+    vehicle[id].marker.remove()
+    vehicle[id].trail.remove()
+
+    delete vehicle[id]
+
+    console.log('veh', vehicle)
+
 }

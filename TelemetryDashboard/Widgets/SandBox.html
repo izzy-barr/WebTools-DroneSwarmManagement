@@ -109,7 +109,8 @@
     let user_class = null
     let user_script = null
     let options = {}
-    let selected = {}
+    let selected = [] //IB add
+    let colour = null //IB add
 
     let replace_div = function() {
         user_div = document.createElement("div") //IB remove 'const'
@@ -121,7 +122,7 @@
         user_div.style.margin = "10px"
         user_div.style.border = "5px solid"
         user_div.style.borderRadius = "10px"
-        user_div.style.borderColor = "#c8c8c8"
+        user_div.style.borderColor = get_colour() //IB
         user_div.style.backgroundColor = "#ffffff"
 
         user_div.style.padding = "5px"
@@ -131,7 +132,7 @@
 
     let user_error = function(err) {
         // Reset div
-        user_div = replace_div("#c8c8c8") //IB remove 'const'
+        user_div = replace_div //IB remove 'const'
         user_div.style.overflow = "auto"
 
         // Print to div
@@ -229,17 +230,11 @@
         }
 
         try { //IB added if logic to filter messages
-            selected = options.vehicleID
+            update_selected(options.vehicleID)
             
-            if (selected.length == 0) return
-            else if (selected.length !== 36) {
-                if (selected.includes(msg._vehicleID)) {
-                    user_class.handle_msg(msg)
-                }
-            } else {
-                if (msg._vehicleID === selected) {
-                    user_class.handle_msg(msg)
-                }
+            if (selected.length === 0) return
+            if (selected.includes(msg._vehicleID)) {
+                user_class.handle_msg(msg)
             }
 
         } catch (e) {
@@ -247,9 +242,28 @@
         }
     }
 
+    //IB get colour of selected vehicle, if one selected, else grey
+    function get_colour() {
+        if (selected.length == 1) {
+            colour = parent.vehicleMap.get(selected[0]).colour
+        } else colour = "#c8c8c8"
+        return colour
+    }
+
+    //IB sets selected vehicles always as an array
+    function update_selected(vehicleID) {
+        if (Array.isArray(vehicleID)) {
+            selected = vehicleID
+        } else if (vehicleID) {
+            selected = [vehicleID]
+        } else {
+            selected = []
+        }
+    }
+
     let handle_user_options = function(new_options) {
         options = new_options
-        selected = options.vehicleID
+        update_selected(options.vehicleID)
 
         if ((user_class == null) && (user_script != null)) {
             // If the user script is not running it may be due to an incorrect option
@@ -264,12 +278,7 @@
 
         try {
             user_class.handle_options(options)
-
-            //IB set colour of border according to vehicle selected
-            if (selected.length == 36) {
-                user_div.style.borderColor = parent.vehicleMap.get(selected).colour
-            }
-
+            user_div.style.borderColor = get_colour() //IB set colour of border on vehicle selected
         } catch (e) {
             user_error(e)
         }
@@ -279,12 +288,30 @@
     //IB change border colour according to selected vehicle's colour change
     parent.addEventListener('vehicleColourChanged', e => {
         const { vehicleID, colour } = e.detail;
-        console.log('got colour event', vehicleID, colour);
-
-        if (selected == vehicleID) {
-            user_div.style.borderColor = parent.vehicleMap.get(selected).colour
-        }
+        if (selected.includes(vehicleID)) get_colour()
     });
+
+    //IB add to listen for vehicle Disconnect
+    parent.addEventListener('vehicleDisconnect', e => {
+        const vehicleID = e.detail.vehicleID
+        console.log('vehicle Disconnect heard!!!', vehicleID)
+        console.log('old selected', selected, user_class)
+        // Updates options in dropdown menu according to vehicles connected
+        window.frameElement.parentElement.updateVehicleSelect()
+        //if (selected.includes(vehicleID)) {
+        /*    console.log('heard disconnect for', vehicleID)
+
+            selected = selected.filter(id => id !== vehicleID)
+            update_selected(selected)
+            console.log('new selected', selected)
+
+        //}*/
+        console.log('selected', selected)
+        //load_user_script()
+        //user_class.handle_options()
+        //window.frameElement.parentElement.form_changed()
+    })
+
 
     window.addEventListener('message', function (e) {
         const data = e.data
