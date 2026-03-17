@@ -273,17 +273,6 @@ function update_nav_target(msg) {
         clearTimeout(vehicle[id].nav_target.timeoutID)
     }
 
-    function remove_nav_target(id) {
-
-        if (vehicle[id].nav_target.timeoutID != null) {
-            clearTimeout(vehicle[id].nav_target.timeoutID)
-        }
-
-        if (map.hasLayer(vehicle[id].nav_target.line)) {
-            map.removeLayer(vehicle[id].nav_target.line)
-        }
-    }
-
     const distance = msg.wp_dist
 
     if (distance == 0) {
@@ -337,6 +326,17 @@ function update_nav_target(msg) {
     vehicle[id].nav_target.timeoutID =
         setTimeout(remove_nav_target, 2000, id)
 }
+//IB move out to access it on disconnect
+function remove_nav_target(id) {
+
+    if (vehicle[id].nav_target.timeoutID != null) {
+        clearTimeout(vehicle[id].nav_target.timeoutID)
+    }
+
+    if (map.hasLayer(vehicle[id].nav_target.line)) {
+        map.removeLayer(vehicle[id].nav_target.line)
+    }
+}
 
 // Position target line
 function update_position_target(msg) {
@@ -366,17 +366,6 @@ function update_position_target(msg) {
         clearTimeout(vehicle[id].pos_target.timeoutID)
     }
 
-    function remove_pos_target(id) {
-
-        if (vehicle[id].pos_target.timeoutID != null) {
-            clearTimeout(vehicle[id].pos_target.timeoutID)
-        }
-
-        if (map.hasLayer(vehicle[id].pos_target.line)) {
-            map.removeLayer(vehicle[id].pos_target.line)
-        }
-    }
-
     const vehicle_location = vehicle[id].marker.getLatLng()
     const target_location = new L.LatLng(
         msg.lat_int * (10 ** -7),
@@ -394,6 +383,17 @@ function update_position_target(msg) {
 
     vehicle[id].pos_target.timeoutID =
         setTimeout(remove_pos_target, 2000, id)
+}
+//IB move out to access it on disconnect
+function remove_pos_target(id) {
+
+    if (vehicle[id].pos_target.timeoutID != null) {
+        clearTimeout(vehicle[id].pos_target.timeoutID)
+    }
+
+    if (map.hasLayer(vehicle[id].pos_target.line)) {
+        map.removeLayer(vehicle[id].pos_target.line)
+    }
 }
 
 const tip_div = document.createElement("div")
@@ -746,7 +746,10 @@ function remove_vehicle(id) {
 
     vehicle[id].marker.remove()
     vehicle[id].trail.remove()
-
+    if (vehicle[id].pos_target) remove_pos_target(id)
+    if (vehicle[id].nav_target) remove_nav_target(id)
+    if (home[id]) home[id].remove()
+    delete home[id]
     delete vehicle[id]
 
     console.log('veh', vehicle)

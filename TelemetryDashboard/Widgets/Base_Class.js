@@ -87,7 +87,12 @@ class WidgetBase extends HTMLElement {
 
         // Add form
         const form_div = this.tippy_div.querySelector(`div[id="form"]`)
-        form_definition = this.add_vehicleSelector(form_definition) //IB add vehicle selector to all widget form definitions
+        
+        //IB add vehicle selector to widgets listed in vehicleSelectorWidgets
+        let vehicleSelectorWidgets = ["Attitude gauge", "Graph", "Map", "MAVLink inspector", "MAVLink messages", "Stats", "Value"]
+        if (vehicleSelectorWidgets.includes(this.about.name)) {
+            form_definition = this.add_vehicleSelector(form_definition) 
+        }
 
         Formio.createForm(form_div, form_definition).then((form) => {
             // Populate form object and add changed callback
@@ -173,7 +178,15 @@ class WidgetBase extends HTMLElement {
         parent.addEventListener('primarySelectVehicle', e => {
             const primaryVehicleID = e.detail.vehicleID
             this.primaryVehicleSelector(primaryVehicleID)
-    })
+        })
+
+        //IB add to listen for vehicle Disconnect
+        parent.addEventListener('vehicleDisconnect', e => {
+            const vehicleID = e.detail.vehicleID
+            this.updateVehicleSelect(vehicleID)
+            console.log('vehicle Disconnect heard!!!', vehicleID)
+            
+        })
 
     }
 
@@ -197,8 +210,6 @@ class WidgetBase extends HTMLElement {
             existingComponent.data.values = currentEntries
             return schema
         }
-
-
 
         let allowMultiple = false;
 
@@ -224,16 +235,15 @@ class WidgetBase extends HTMLElement {
 
     //IB Get entries for select vehicle dropdown menu according to connected websockets
     get_mapEntries() {
-        if (!vehicleMap || vehicleMap.size === 0) {
-            return []
-        }
+        if (!vehicleMap || vehicleMap.size === 0) return []
 
-        return [...vehicleMap.values()]
+        const connectedVehicles = [...vehicleMap.values()]
             .filter(vehicle => vehicle.ws && vehicle.ws.readyState === WebSocket.OPEN) // Only include connected vehicles
             .map(vehicle => ({
                 label: vehicle.name,
                 value: vehicle.id
             }))
+        return connectedVehicles
     }
 
     //IB set default option to primary vehicle selected
@@ -245,7 +255,6 @@ class WidgetBase extends HTMLElement {
         const comp = this.form.getComponent("vehicleID")
         if (!comp) return
 
-        //const primaryVehicle = parent.window.selectVehicle.id
         comp.setValue(id)
 
         this.form.triggerChange()
@@ -253,103 +262,40 @@ class WidgetBase extends HTMLElement {
     }
 
      //IB update select Vehicle options in dropdown menu according to connected websockets
-    updateVehicleSelect() {
+    updateVehicleSelect(id) {
         console.log('updateVehicleSelect called')
 
-        if (!this.form) {
-            return
-        }
+        if (!this.form) return
 
-        const comp = this.form.getComponent("vehicleID")
-        if (!comp) {
-            return
-        }
+        const compVehID = this.form.getComponent("vehicleID")
+        if (!compVehID) return
 
         const values = this.get_mapEntries()
         const validValues = values.map(v => v.value)
 
         // update dropdown options
-        comp.component.data.values = values
-        comp.redraw()
+        compVehID.component.data.values = values
+        compVehID.redraw()
 
-        // get current value from the component itself (more reliable)
-        const currentValue = comp.getValue()
-        let newValue = currentValue
-
-        if (comp.component.multiple) {
-
-            if (Array.isArray(currentValue)) {
-                newValue = currentValue.filter(v => validValues.includes(v))
-            } else {
-                newValue = []
-            }
-
-        } else {
-            if (!validValues.includes(currentValue)) {
-                newValue = null
-            }
-
+        // array-ify current selected values
+        let compVehIDValues = compVehID.getValue()
+        if (Array.isArray(compVehIDValues) == false) {
+            compVehIDValues = [compVehIDValues]
         }
 
-        // only update if changed
-        /*if (JSON.stringify(newValue) !== JSON.stringify(currentValue)) {
-            //comp.setValue(newValue, { modified: true })
-            comp.setValue(newValue)
-        }
+        // exit if removed vehicle was not previously selected
+        if (compVehIDValues.includes(id) == false) return
 
-        comp.resetValue()*/
+        // remove vehicle from options if it was previously selected
+        if (compVehIDValues.length > 1) {
+            console.log('about', this.about.name, compVehIDValues)
+            const newValue = compVehIDValues.filter(val => validValues.includes(val))
+            console.log('new vale', newValue)
+            compVehID.setValue(newValue)
+        } else compVehID.setValue("")
 
-        if (JSON.stringify(newValue) !== JSON.stringify(currentValue)) {
+        this.form.triggerChange()
 
-            comp.setValue(newValue, {
-                modified: true,
-                noValidate: true
-            })
-
-            // force form-wide change propagation
-            this.form.triggerChange()
-        //this.form.setSubmission(this.form.submission)
-
-        }
-
-        
-        /*       console.log('updateVehicleSelect called')
-        if (!this.form) {
-            return
-        }
-
-        const comp = this.form.getComponent("vehicleID")
-        if (!comp) {
-            return
-        }
-        const values = this.get_mapEntries()
-        const validValues = values.map(v => v.value) //
-
-        comp.component.data.values = values
-        comp.redraw()
-
-        //
-        // Clear selected value if it's no longer valid
-        const currentValue = this.form.submission.data.vehicleID
-        let newValue = currentValue
-
-        if (comp.component.multiple) {
-            // For multiple select, filter out invalid values
-            if (Array.isArray(currentValue)) {
-                newValue = currentValue.filter(val => validValues.includes(val))
-            } else {
-                newValue = []
-            }
-        } else {
-            // For single select, set to null if not valid
-            if (currentValue && !validValues.includes(currentValue)) {
-                newValue = null
-            } 
-        } 
-
-        if (JSON.stringify(newValue) !== JSON.stringify(currentValue)) {
-            comp.setValue(newValue)
-        }*/
     }
 
     // Enable or disable editing

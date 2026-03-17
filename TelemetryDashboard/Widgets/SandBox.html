@@ -288,30 +288,8 @@
     //IB change border colour according to selected vehicle's colour change
     parent.addEventListener('vehicleColourChanged', e => {
         const { vehicleID, colour } = e.detail;
-        if (selected.includes(vehicleID)) get_colour()
+        if (selected.includes(vehicleID)) user_div.style.borderColor = get_colour()
     });
-
-    //IB add to listen for vehicle Disconnect
-    parent.addEventListener('vehicleDisconnect', e => {
-        const vehicleID = e.detail.vehicleID
-        console.log('vehicle Disconnect heard!!!', vehicleID)
-        console.log('old selected', selected, user_class)
-        // Updates options in dropdown menu according to vehicles connected
-        window.frameElement.parentElement.updateVehicleSelect()
-        //if (selected.includes(vehicleID)) {
-        /*    console.log('heard disconnect for', vehicleID)
-
-            selected = selected.filter(id => id !== vehicleID)
-            update_selected(selected)
-            console.log('new selected', selected)
-
-        //}*/
-        console.log('selected', selected)
-        //load_user_script()
-        //user_class.handle_options()
-        //window.frameElement.parentElement.form_changed()
-    })
-
 
     window.addEventListener('message', function (e) {
         const data = e.data

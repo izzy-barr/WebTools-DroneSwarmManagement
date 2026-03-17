@@ -167,3 +167,38 @@ handle_options = function (new_options) {
 on_disconnect = function () {
     
 }
+
+//IB vehicle disconnect
+parent.addEventListener('vehicleDisconnect', e => {
+    const vehicleID = e.detail.vehicleID
+    console.log('vehicle Disconnect heard from graph', vehicleID, plot_data)
+    const vehicleDisconnected = Object.entries(plot_data).find(([key, v]) => v && v.name === parent.vehicleMap.get(vehicleID).name)
+    if (vehicleDisconnected) {
+        remove_vehicle(vehicleDisconnected[0])
+    } 
+})
+
+//IB remove trace
+function remove_vehicle(id) {
+    console.log('remove vehicle id', id)
+    /*if (!plot_data[id]) return
+
+    plot_data[id].remove()
+    delete vehicle_data[id]
+    delete plot_data[id]
+    replot()
+    console.log('veh', vehicle_data, plot_data)*/
+
+    const traceIndex = vehicle_data[id]?.trace_index;
+    if (traceIndex == null) return;
+
+    Plotly.deleteTraces(div, traceIndex);
+    vehicle_data[id].time.length = 0;
+    vehicle_data[id].value.length = 0;
+
+    // remove from your data structures
+    plot_data.splice(traceIndex, 1);
+    delete vehicle_data[id];
+
+    replot();
+}
