@@ -7,6 +7,8 @@ function setup_connect(button_svg, button_color) {
 
     const tip_div = document.createElement("div")
     tip_div.appendChild(document.importNode(document.getElementById('connection_tip_template').content, true))
+    const selector = tip_div.querySelector('select[id="vehicleSelector"]') //IB
+    let selectVehicle = null
     const tip = tippy(button_svg, {
         content: tip_div,
         interactive: true,
@@ -33,14 +35,52 @@ function setup_connect(button_svg, button_color) {
               ],
         },
     })
-    button_svg.onclick = () => { tip.show() }
+    button_svg.onclick = () => { 
+        tip.show()
+    }
 
 
     // Fix html examples, add stats example to pallet.
 
+    //IB Refresh list for vehicle selection
+    function refresh_selectVehicle() {
+        console.log('refreseh vehicle select claled')
+        selector.innerHTML="";            
+        vehicleMap.forEach(element => { console.log('el', element)
+            if (element.ws && element.ws.readyState === WebSocket.OPEN) {
+            console.log('elemetn', element)
+            selector.appendChild(new Option(element.name, element.id))}
+        });
+        //set_selectVehicle()
+    }
+
+    //IB Set selected vehicle
+    function set_selectVehicle() {
+        let selectedVehicleID = selector.value;
+        selectVehicle = vehicleMap.get(selectedVehicleID);
+        console.log('selected vehicle: ' + selectVehicle)
+
+        // send message that a primary vehicle has been selected!
+        const evt = new CustomEvent('primarySelectVehicle', {
+            detail: { vehicleID: selectVehicle?.id }
+        })
+        window.dispatchEvent(evt)
+    }
+
+    //IB listen for change of selected vehicle
+    selector.addEventListener('change', () => {
+        console.log('change')
+        //set_selectVehicle();
+    })
 
     // Connection tool tip
     tippy(tip_div.querySelector('img[id="TT"]'), {
+        appendTo: () => document.body,
+        theme: 'light-border', // differentiate from the interactive tip were in already
+    })
+
+    //IB Selection tool tip
+    tippy(tip_div.querySelector('img[id="TTselect"]'), {
         appendTo: () => document.body,
         theme: 'light-border', // differentiate from the interactive tip were in already
     })
@@ -53,6 +93,7 @@ function setup_connect(button_svg, button_color) {
 
     //IB Define Buttons 
     const add_button = tip_div.querySelector('input[id="add_button"]')
+    const select_button = tip_div.querySelector('input[id="select_button"]')
     const form = tip_div.querySelector('div[id="form"]')
 
 
@@ -71,8 +112,10 @@ function setup_connect(button_svg, button_color) {
     function addName(idNum) {
         const ipName = document.createElement('input');
         ipName.id = 'name' + idNum;
+        ipName.type = 'text';
         ipName.placeholder = 'Unique Vehicle Name';
         ipName.required = 'true';
+        ipName.maxLength = "10";
         return ipName;
     }
 
@@ -100,7 +143,7 @@ function setup_connect(button_svg, button_color) {
         return disconnect;
     }
 
-    //IB Add inputs on button click
+    //IB Add inputs on add button click
     add_button.onclick = () => {
         console.log('Add button clicked')
 
@@ -146,7 +189,7 @@ function setup_connect(button_svg, button_color) {
 
         newConnect.onclick = () => {
             console.log('newConnect clicked')
-        
+            
             const in_progress = (vehicle.ws != null) && ((vehicle.ws.readyState == WebSocket.CONNECTING) || (vehicle.ws.readyState == WebSocket.CLOSING))
             if (in_progress) {
                 // Don't do anything if the socket is connecting or closing a connection
@@ -176,6 +219,12 @@ function setup_connect(button_svg, button_color) {
 
         set_inputs(vehicle, false)
     }
+
+    //IB Select vehicle on button click
+    select_button.onclick = () => {
+        set_selectVehicle()
+    }
+
 
     function set_inputs(vehicle, connected) { //IB added vehicle parameter to set inputs for specific vehicle
         // Disable connect button, remove button and url input, enable disconnect button
@@ -218,6 +267,8 @@ function setup_connect(button_svg, button_color) {
 
             // Have been connected
             vehicle.been_connected = true
+
+            refresh_selectVehicle() //IB added to refresh options according to open websockets
         })
 
         vehicle.ws.addEventListener('close', () => {
@@ -235,6 +286,7 @@ function setup_connect(button_svg, button_color) {
             // Enable connect buttons
             set_inputs(vehicle, false)
 
+            refresh_selectVehicle() //IB added to refresh options according to open websockets
         })
 
     }
@@ -262,91 +314,9 @@ function setup_connect(button_svg, button_color) {
         return colour
     }
 
-}
-
-
-//IB Setup manager button in menu widget, this handles multiple vehicle management and selection
-function setup_manager(button_svg) {
-    console.log('setup_manager called')
-
-    const tip_div = document.createElement("div")
-    tip_div.appendChild(document.importNode(document.getElementById('multivehicle_tip_template').content, true))
-    const selector = tip_div.querySelector('select[id="vehicleSelector"]')
-
-    const tip = tippy(button_svg, {
-        content: tip_div,
-        interactive: true,
-        trigger: 'manual',
-        maxWidth: "1000px",
-        appendTo: () => document.body,
-        popperOptions: {
-            strategy: 'fixed',
-            modifiers: [
-                {
-                  name: 'flip',
-                  options: {
-                    fallbackPlacements: ['bottom', 'right'],
-                  },
-                },
-                {
-                  name: 'preventOverflow',
-                  options: {
-                    altAxis: true,
-                    tether: false,
-                  },
-                },
-              ],
-        },
-    })
-
-    // Set selected vehicle
-    function set_selectVehicle() {
-        let selectedVehicleID = selector.value;
-        window.selectVehicle = vehicleMap.get(selectedVehicleID);
-        console.log('selected vehicle: ' + window.selectVehicle)
-    }
-
-    function get_selectVehicle () {
-        let selectedVehicleID = window.selectVehicle.id;
-        selector.value = selectedVehicleID;
-    }
-
-    // On click, update list of vehicles to be selected according to connected websockets
-    button_svg.onclick = () => { 
-        selector.innerHTML="";            
-        vehicleMap.forEach(element => selector.appendChild(new Option(element.name, element.id)));
-
-        if (window.selectVehicle !== null) {
-            get_selectVehicle();
-        }
-
-        tip.show()
-    }
-
-    selector.addEventListener('change', () => {
-        console.log('change')
-        set_selectVehicle();
-    })
-
-    // Close button
-    tip_div.querySelector(`svg[id="Close"]`).onclick = () => {
-
-        // If there are options to choose from, set selected option
-        if (selector.innerHTML !== "") {
-            set_selectVehicle()
-        }
-
-        tip.hide()
-    }
-
-    // Connection tool tip
-    tippy(tip_div.querySelector('img[id="TT"]'), {
-        appendTo: () => document.body,
-        theme: 'light-border', // differentiate from the interactive tip were in already
-    })
+    refresh_selectVehicle() //IB add to refresh selection options for primary vehicle shown
 
 }
-
 
 
 // Get the details of the passed in widget for copy or save
