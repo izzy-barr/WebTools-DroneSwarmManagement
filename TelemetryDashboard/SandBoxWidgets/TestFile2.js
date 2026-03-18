@@ -1,204 +1,144 @@
-        // Include Plotly
-const script = document.createElement("script");
-script.src = "https://cdn.plot.ly/plotly-2.35.0.min.js";
-document.body.appendChild(script);
-
-// Setup layout
-const plot_layout = {
-    title: { text: options.title },
-    legend: { itemclick: false, itemdoubleclick: false },
-    margin: { b: 50, l: 65, r: 50, t: 50 },
-    xaxis: {
-        title: { text: "time (s)" },
-        range: [-options.time, 0],
-        zeroline: false,
-        showline: true,
-        mirror: true
-    },
-    yaxis: {
-        title: { text: options.label },
-        zeroline: false,
-        showline: true,
-        mirror: true
+// Build component ID lookup
+let comp_id = {}
+for (const [key, value] of Object.entries(mavlink20)) {
+    if (key.startsWith("MAV_COMP_ID")) {
+        comp_id[value] = key
     }
-};
+}
+// Add a heading
+const heading = document.createElement("h3")
+heading.appendChild(document.createTextNode("MAVLink Inspector"))
+heading.style.margin = 0
+div.appendChild(heading)
 
-const plot_data = [] //IB change
+// Use flex to allow the tree to take up the remaining space
+div.style.display = "flex"
+div.style.flexDirection = "column"
 
-let vehicle_data = {} //IB add
-let plot_created = false;
+// Add a div to hold the tree
+const tree_div = document.createElement("div")
+tree_div.style.height = "100%"
+div.appendChild(tree_div)
 
-//IB moved plot_data and vehicle_data into function for multi vehicle purposes
-function graph_vehicle_init(id, colour, vehicleID) {
+// Allow scrolling if needed
+tree_div.style.overflow = "auto"
+// List for any system IDs
+let ids = {}
 
-    const trace = {
-        mode: "lines",
-        x: [],
-        y: [],
-        line: { color: colour },
-        name: parent.vehicleMap.get(vehicleID).name
-    };
+let selected = null //IB add
 
-    plot_data.push(trace)
-
-    vehicle_data[id] = {
-        time: [],
-        value: [],
-        trace_index: plot_data.length - 1
-    };
-
-    replot()
+// Create a new details elememnt with summary
+function create_details(summary_text, indent = false, open = true) {
+    // Create new details item
+    const details = document.createElement("details")
+    
+    // Add text
+    const summary = document.createElement("summary")
+    summary.appendChild(document.createTextNode(summary_text))
+    details.appendChild(summary)
+    
+    if (indent) {
+        details.style.marginLeft = "1em"
+    }
+    details.open = open
+    
+    return details
 }
 
-// Update plot
-function update_data() {
-
-    //IB move inside for loop for each vehicle and updated variable names
-    for (const id in vehicle_data) {
-        
-         // Calculate time since sample
-        const v = vehicle_data[id] //IB add
-        const now = Date.now();
-        const len = v.time.length;
-        const dt = new Array(len);
-
-        for (let i = 0; i < len; i++) {
-            dt[i] = (now - v.time[i]) / -1000.0;
+// Add a new item to a tree
+function add_to_tree(tree, id, parent, item) {
+    
+    // Find any existing id that should come before this one
+    let prior_item = null
+    for (const existing_id of Object.keys(tree)) {
+        if (parseInt(existing_id) < id) {
+            prior_item = tree[existing_id]
         }
-
-        // See if there is any data to discard
-        const last = dt.findLastIndex((x) => -x > options.time);
-
-        if (last !== -1) {
-            v.time.splice(0, last);
-            v.value.splice(0, last);
-            dt.splice(0, last);
-        }
-
-        // Update plot data
-        plot_data[v.trace_index].x = dt;
-        plot_data[v.trace_index].y = v.value;
-
     }
     
-
-    // Make sure Plotly is loaded
-    if (window.Plotly !== undefined) {
-        if (!plot_created) {
-            replot();
-        }
-        Plotly.redraw(div);
+    if (prior_item == null) {
+        // No prior element, add to start of tree
+        parent.append(item)
+    } else {
+        // Add affter the prior element
+        prior_item.ele.after(item)
     }
+    
+    tree[id] = { ele: item, content: {} }
 }
-
-function replot() {
-    // Clear plot and redraw to cope with change in size or options
-    plot_layout.title.text = options.title;
-    plot_layout.xaxis.range[0] = -options.time;
-    plot_layout.yaxis.title.text = options.label;
-
-    if (window.Plotly !== undefined) {
-        Plotly.purge(div);
-        Plotly.newPlot(div, plot_data, plot_layout, { displaylogo: false });
-        plot_created = true;
-    }
-}
-
-//IB change plotline colour
-function change_colour(colour, id) {
-    // Clear plot and redraw to cope with change in size or options
-    plot_data[vehicle_data[id].trace_index].line.color = colour;
-
-    if (window.Plotly !== undefined) {
-        Plotly.purge(div);
-        Plotly.newPlot(div, plot_data, plot_layout, { displaylogo: false });
-        plot_created = true;
-    }
-}
-
-// Watch for size changes
-new ResizeObserver(() => {
-    replot();
-}).observe(div);
 
 // Runtime function
 handle_msg = function (msg) {
-
-    // Check message ID
-    if (msg._id !== options.message) {
-        return;
-    }
-
-    // Check for field
-    if (!(options.field in msg)) {
-        throw new Error("No field " + options.field + " in " + msg._name);
-    }
-
-    const id = msg._header.srcSystem //IB add
-
-    //IB add
-    if (vehicle_data[id] == null) {
-        graph_vehicle_init(id, msg._colour, msg._vehicleID)
-    } else if (plot_data[vehicle_data[id].trace_index].line.color !== msg._colour) {
-        console.log('vehicleData', vehicle_data, 'plotdata', plot_data)
-        change_colour(msg._colour, id)
-    }
-
-    let value = msg[options.field];
-    value *= options.scaleFactor;
-
-    // Add data
-    vehicle_data[id].value.push(value);
-    vehicle_data[id].time.push(Date.now());
-
-    // Plot
-    update_data();
-};
-
-// Add 10 Hz update plot
-setInterval(update_data, 100);
-
-// Optional function to allow run-time update of options
-handle_options = function (new_options) {
-    options = new_options;
-    replot();
-}
-
-on_disconnect = function () {
     
-}
+    const id = msg._header.srcSystem
+    const comp = msg._header.srcComponent
+    const msg_id = msg._id
+    
+    // Add new ID to tree if not already there
+    if (!(id in ids)) {
+        add_to_tree(ids, id, tree_div, create_details("System ID: " + id))
+    }
+    
+    const id_branch = ids[id]
+    
+    // Add new component to tree if not already there
+    if (!(comp in id_branch.content)) {
+        let comp_str = "Component ID:" + comp
+        if (comp in comp_id) {
+            comp_str += " " + comp_id[comp]
+        }
+        
+        add_to_tree(id_branch.content, comp, id_branch.ele, create_details(comp_str, true))
+    }
+    
+    const component_branch = id_branch.content[comp]
+    
+    // Add new message to tree if not already there
+    if (!(msg_id in component_branch.content)) {
+        let msg_str
+        let type = null
+        if (msg_id in mavlink20.map) {
+            type = new mavlink20.map[msg_id].type
+            msg_str = type._name + " (" + msg_id + ")"
+        } else {
+            msg_str = "" + msg_id 
+       }
+        add_to_tree(component_branch.content, msg_id, component_branch.ele, create_details(msg_str, true, false))
+        
+        const msg_item = component_branch.content[msg_id]
+        msg_item.type = type
+        
+        if (type != null) {
+            // Add line for each field
+            for (const field of type.fieldnames) {
+                const line = document.createElement("li")
+                line.style.marginLeft = "1em"
+                line.appendChild(document.createTextNode(field + ": "))
+                msg_item.ele.appendChild(line)
+                const value = document.createTextNode("?")
+                line.appendChild(value)
+                msg_item.content[field] = value
+            }
+        }
+    }
+    
+    // Update the field values
+    const msg_item = component_branch.content[msg_id]
+    if (msg_item.type != null) {
+        for (const [field, text] of Object.entries(msg_item.content)) {
+           text.nodeValue = msg[field]
+        }
+    }
+    }
+
 
 //IB vehicle disconnect
 parent.addEventListener('vehicleDisconnect', e => {
     const vehicleID = e.detail.vehicleID
-    console.log('vehicle Disconnect heard from graph', vehicleID, plot_data)
-    const vehicleDisconnected = Object.entries(plot_data).find(([key, v]) => v && v.name === parent.vehicleMap.get(vehicleID).name)
-    if (vehicleDisconnected) {
-        remove_vehicle(vehicleDisconnected[0])
+    console.log('vehicle Disconnect heard from mavlink inspector', vehicleID)
+    if (vehicleID == selected) {
+        attitude.updateRoll(0)
+        attitude.updatePitch(0)
+        resize()
     } 
 })
-
-//IB remove trace
-function remove_vehicle(id) {
-    console.log('remove vehicle id', id)
-    /*if (!plot_data[id]) return
-
-    plot_data[id].remove()
-    delete vehicle_data[id]
-    delete plot_data[id]
-    replot()
-    console.log('veh', vehicle_data, plot_data)*/
-
-    const traceIndex = vehicle_data[id]?.trace_index;
-    if (traceIndex == null) return;
-
-    Plotly.deleteTraces(div, traceIndex);
-    vehicle_data[id].time.length = 0;
-    vehicle_data[id].value.length = 0;
-
-    // remove from your data structures
-    plot_data.splice(traceIndex, 1);
-    delete vehicle_data[id];
-
-    replot();
-}
