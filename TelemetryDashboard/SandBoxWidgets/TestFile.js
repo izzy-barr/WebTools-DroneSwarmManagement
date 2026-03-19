@@ -151,7 +151,7 @@ function change_colour(icon, colour) {
 // Update the position of a vehicle
 function update_pos(msg) {
 
-    const id = msg._header.srcSystem
+    const id = msg._vehicleID
     const location = new L.LatLng(msg.lat * (10 ** -7), msg.lon * (10 ** -7))
     const heading = msg.hdg * 0.01
     const type = parent.vehicleMap.get(msg._vehicleID).type
@@ -238,7 +238,7 @@ function home_init(id, location) {
 // Update the position of home
 function update_home(msg) {
 
-    const id = msg._header.srcSystem
+    const id = msg._vehicleID
     const location = new L.LatLng(
         msg.latitude * (10 ** -7),
         msg.longitude * (10 ** -7)
@@ -254,7 +254,7 @@ function update_home(msg) {
 // Nav target line
 function update_nav_target(msg) {
 
-    const id = msg._header.srcSystem
+    const id = msg._vehicleID
 
     if (vehicle[id] == null) {
         // Vehicle is not shown yet
@@ -341,7 +341,7 @@ function remove_nav_target(id) {
 // Position target line
 function update_position_target(msg) {
 
-    const id = msg._header.srcSystem
+    const id = msg._vehicleID
 
     if (vehicle[id] == null) {
         return
@@ -625,13 +625,14 @@ function add_to_tree(tree, id, parent, item) {
 //IB update MAVLink Inspector
 function update_mavlink_inspector(msg) {
     console.log('update mavlink inspector called')        
-    const id = msg._header.srcSystem
+    const id = msg._vehicleID
+    const sys_id = msg._header.srcSystem//IB change sys_id and id
     const comp = msg._header.srcComponent
     const msg_id = msg._id
 
     // Add new ID to tree if not already there
     if (!(id in ids)) {
-        add_to_tree(ids, id, tree_div, create_details("System ID: " + id))
+        add_to_tree(ids, id, tree_div, create_details("System ID: " + sys_id))
     }
 
     const id_branch = ids[id]
@@ -737,7 +738,8 @@ parent.addEventListener('vehicleDisconnect', e => {
     const vehicleDisconnected = Object.entries(vehicle).find(([key, v]) => v && v._vehicleID === vehicleID)
     if (vehicleDisconnected) {
         remove_vehicle(vehicleDisconnected[0])
-    } 
+    }
+    window.tip.hide()
 })
 
 //IB remove vehicle

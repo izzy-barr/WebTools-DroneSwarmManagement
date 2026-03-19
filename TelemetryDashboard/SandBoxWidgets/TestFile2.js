@@ -70,13 +70,15 @@ function add_to_tree(tree, id, parent, item) {
 // Runtime function
 handle_msg = function (msg) {
     
-    const id = msg._header.srcSystem
+    const id = msg._vehicleID
+    const sys_id = msg._header.srcSystem //IB change sys_id and id
     const comp = msg._header.srcComponent
     const msg_id = msg._id
+    selected = msg._vehicleID //IB add
     
     // Add new ID to tree if not already there
     if (!(id in ids)) {
-        add_to_tree(ids, id, tree_div, create_details("System ID: " + id))
+        add_to_tree(ids, id, tree_div, create_details("System ID: " + sys_id))
     }
     
     const id_branch = ids[id]
@@ -137,8 +139,6 @@ parent.addEventListener('vehicleDisconnect', e => {
     const vehicleID = e.detail.vehicleID
     console.log('vehicle Disconnect heard from mavlink inspector', vehicleID)
     if (vehicleID == selected) {
-        attitude.updateRoll(0)
-        attitude.updatePitch(0)
-        resize()
+        tree_div.innerHTML = ""
     } 
 })
