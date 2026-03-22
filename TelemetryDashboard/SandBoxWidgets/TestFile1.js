@@ -47,10 +47,15 @@ handle_msg = function (msg) {
     }
 }
 
+//IB Options changed
+handle_options = function (new_options) {
+    options = new_options
+}
+
 //IB vehicle disconnect
-parent.addEventListener('vehicleDisconnect', e => {
+parent.addEventListener('vehicleRemove', e => {
     const vehicleID = e.detail.vehicleID
-    console.log('vehicle Disconnect heard from stats', vehicleID)
+    console.log('vehicle remove heard from stats', vehicleID)
     if (vehicleID == selected) {
         message_report.nodeValue = ""
         bytes_report.nodeValue = ""

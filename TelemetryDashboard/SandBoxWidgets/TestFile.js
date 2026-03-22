@@ -732,9 +732,9 @@ handle_options = function (new_options) {
 }
 
 //IB vehicle disconnect
-parent.addEventListener('vehicleDisconnect', e => {
+parent.addEventListener('vehicleRemove', e => {
     const vehicleID = e.detail.vehicleID
-    console.log('vehicle Disconnect heard from map', vehicleID)
+    console.log('vehicle remove heard from map', vehicleID)
     const vehicleDisconnected = Object.entries(vehicle).find(([key, v]) => v && v._vehicleID === vehicleID)
     if (vehicleDisconnected) {
         remove_vehicle(vehicleDisconnected[0])

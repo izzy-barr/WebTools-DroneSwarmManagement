@@ -94,6 +94,8 @@ class WidgetBase extends HTMLElement {
             form_definition = this.add_vehicleSelector(form_definition) 
         }
 
+        let previousVehicleIDs = []; //IB add
+
         Formio.createForm(form_div, form_definition).then((form) => {
             // Populate form object and add changed callback
             this.form = form
@@ -113,6 +115,12 @@ class WidgetBase extends HTMLElement {
                     // Clear changed flag
                     this.changed = false
 
+                    //IB get selected vehicles
+                    previousVehicleIDs = this.form.submission.data.vehicleID || []
+                    if (Array.isArray(previousVehicleIDs) == false) {
+                        previousVehicleIDs = [previousVehicleIDs]
+                    }
+
                     // Add change callback
                     this.last_content = JSON.stringify(this.form.submission.data)
                     this.form.on('change', (e) => {
@@ -128,6 +136,32 @@ class WidgetBase extends HTMLElement {
                         if (this.last_content == JSON_data) {
                             // No change from last submission
                             return
+                        }
+                        
+                        //IB find removed vehicle from selected                        
+                        if (e.changed.component.key === 'vehicleID') {
+                            let currentValue = e.changed.value || [];
+
+                            if (Array.isArray(currentValue) == false) {
+                                currentValue = [currentValue]
+                            }
+
+                            // Find removed values
+                            const removed = previousVehicleIDs.filter(val => !currentValue.includes(val));
+
+                            if (removed.length > 0) {
+                                console.log('Removed:', removed);
+
+                                removed.forEach(id => {
+                                    const evt = new CustomEvent('vehicleRemove'+this.about.name, {
+                                        detail: { vehicleID: id }
+                                    });
+                                    window.dispatchEvent(evt);
+                                });
+                            }
+
+                            previousVehicleIDs = [...currentValue]
+                    
                         }
                         this.last_content = JSON_data
                         this.form_changed()
@@ -261,23 +295,30 @@ class WidgetBase extends HTMLElement {
         
     }
 
+    //IB
+    removeDisconnectedVehicles(id) {
+        console.log()
+    }
+
      //IB update select Vehicle options in dropdown menu according to connected websockets
     updateVehicleSelect(id) {
         console.log('updateVehicleSelect called')
 
         if (!this.form) return
 
+        // vehicle(s) already in form
         const compVehID = this.form.getComponent("vehicleID")
         if (!compVehID) return
-
+ 
+        // vehicle(s) with connected websockets
         const values = this.get_mapEntries()
         const validValues = values.map(v => v.value)
 
-        // update dropdown options
+        // update dropdown options to connected vehicles
         compVehID.component.data.values = values
         compVehID.redraw()
 
-        // array-ify current selected values
+        // array-ify selected vehicle(s) already in form
         let compVehIDValues = compVehID.getValue()
         if (Array.isArray(compVehIDValues) == false) {
             compVehIDValues = [compVehIDValues]
@@ -296,6 +337,11 @@ class WidgetBase extends HTMLElement {
 
         this.form.triggerChange()
 
+        // custom event for widgets to listen for removed vehicle
+        //const evt = new CustomEvent('vehicleRemove', {
+        //    detail: { vehicleID: id }
+        //})
+        //window.dispatchEvent(evt)        
     }
 
     // Enable or disable editing
