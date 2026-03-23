@@ -51,7 +51,6 @@ function setup_connect(button_svg, button_color) {
             console.log('elemetn', element)
             selector.appendChild(new Option(element.name, element.id))}
         });
-        //set_selectVehicle()
     }
 
     //IB Set selected vehicle
@@ -66,12 +65,6 @@ function setup_connect(button_svg, button_color) {
         })
         window.dispatchEvent(evt)
     }
-
-    //IB listen for change of selected vehicle
-    selector.addEventListener('change', () => {
-        console.log('change')
-        //set_selectVehicle();
-    })
 
     // Connection tool tip
     tippy(tip_div.querySelector('img[id="TT"]'), {
