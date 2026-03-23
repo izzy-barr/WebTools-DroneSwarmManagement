@@ -1,6 +1,6 @@
-### Telemetry Dashboard
+# Telemetry Dashboard
 
-This tool has been modified by Isabella from Peter Hall's original version found at [ArduPilot/WebTools/TelemetryDashboard](https://github.com/ArduPilot/WebTools/tree/main/TelemetryDashboard). All the customisable features have been left intact (html editing, save, load templates (note, on load all previously added vehicles are removed) etc).
+This tool has been modified by Isabella Barr from Peter Hall's original version found at [ArduPilot/WebTools/TelemetryDashboard](https://github.com/ArduPilot/WebTools/tree/main/TelemetryDashboard). All the customisable features have been left intact (in-browser file editing, save, load templates (note, on load all previously added vehicles are removed)).
 
 This is a display only tool to help visualizing incoming MAVLink telemetry data.
 
@@ -16,5 +16,6 @@ When Edit is enabled (found in the Settings tippy), you can now select and desel
 Known bugs!! There are two known bugs plus one dormant feature to be aware of, all of which harmless but slightly inconvenient. Have I had had infinite time to work on my Dissertation Project these would have been ironed out, but unfortunately I do have the rest of my degree to complete, a limited amount of hours allocated to this project and indeed in the day so I got as far as I could in the time given. (I will be continuing to clean up these bugs after my exams are done though!). The bugs are as follows:
 - Tippy expanding issue in the Vehicle Info Popup when the MAVLink Inspector tree branch is expanded
 - Plots on the graph not removed when vehicles deselected (either manually or via disconnect)
+
 Dormant feature:
 - Command line text input just prints to console (could be the start of sending commands back to the vehicle...?)
