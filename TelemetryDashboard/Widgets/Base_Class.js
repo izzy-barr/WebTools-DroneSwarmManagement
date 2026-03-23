@@ -336,12 +336,7 @@ class WidgetBase extends HTMLElement {
         } else compVehID.setValue("")
 
         this.form.triggerChange()
-
-        // custom event for widgets to listen for removed vehicle
-        //const evt = new CustomEvent('vehicleRemove', {
-        //    detail: { vehicleID: id }
-        //})
-        //window.dispatchEvent(evt)        
+       
     }
 
     // Enable or disable editing
