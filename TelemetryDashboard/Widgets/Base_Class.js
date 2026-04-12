@@ -138,20 +138,20 @@ class WidgetBase extends HTMLElement {
                             return
                         }
                         
-                        //IB find removed vehicle from selected                        
+                        //IB find removed vehicle from selected vehicles                     
                         if (e.changed.component.key === 'vehicleID') {
                             let currentValue = e.changed.value || [];
 
+                            // Arrayify currentValue if not already
                             if (Array.isArray(currentValue) == false) {
                                 currentValue = [currentValue]
                             }
 
-                            // Find removed values
+                            // Find removed vehicles
                             const removed = previousVehicleIDs.filter(val => !currentValue.includes(val));
 
+                            // Dispatch vehicle remove to widget of the same name if the vehicle was removed
                             if (removed.length > 0) {
-                                console.log('Removed:', removed);
-
                                 removed.forEach(id => {
                                     const evt = new CustomEvent('vehicleRemove'+this.about.name, {
                                         detail: { vehicleID: id }
@@ -160,6 +160,7 @@ class WidgetBase extends HTMLElement {
                                 });
                             }
 
+                            // Update previousVehicleIDs
                             previousVehicleIDs = [...currentValue]
                     
                         }
@@ -208,50 +209,50 @@ class WidgetBase extends HTMLElement {
             e.stopPropagation()
         }
 
-        //IB Listen for primary vehicle to be selected
+        //IB listen for primary vehicle to be selected
         parent.addEventListener('primarySelectVehicle', e => {
             const primaryVehicleID = e.detail.vehicleID
             this.primaryVehicleSelector(primaryVehicleID)
         })
 
-        //IB add to listen for vehicle Disconnect
+        //IB add to listen for vehicle disconnected
         parent.addEventListener('vehicleDisconnect', e => {
             const vehicleID = e.detail.vehicleID
-            this.updateVehicleSelect(vehicleID)
-            console.log('vehicle Disconnect heard!!!', vehicleID)
-            
+            this.updateVehicleSelect(vehicleID)            
         })
 
     }
 
-    //IB adding Vehicle Selector to schema
-    add_vehicleSelector(schema) {
+    //IB adding Vehicle Selector to form_definition
+    add_vehicleSelector(form_definition) {
 
-        if (!schema || !schema.components) {
-            console.log('No schema or components found, returning original schema')
-            return schema
+        // Return original form definition if it doesn't exist or have components
+        if (!form_definition || !form_definition.components) {
+            return form_definition
         }
 
+        // Get connected vehicles for selector options
         let currentEntries = this.get_mapEntries()
 
         // Try to find existing selector
-        const existingComponent = schema.components.find(
+        const existingComponent = form_definition.components.find(
             comp => comp.key === "vehicleID"
         )
 
+        // If selector exists, update entries and return
         if (existingComponent) {
-
             existingComponent.data.values = currentEntries
-            return schema
+            return form_definition
         }
 
+        // Mostly let single select except Map and Graph
         let allowMultiple = false;
-
         if (this.about.name == "Map" || this.about.name == "Graph") {
             allowMultiple = true;
         } else allowMultiple = false;
 
-        schema.components.unshift({
+        // Add selector at the top of the Edit Tippy
+        form_definition.components.unshift({
             type: "select",
             label: "Select Vehicle",
             key: "vehicleID",
@@ -264,13 +265,16 @@ class WidgetBase extends HTMLElement {
             },
         })
 
-        return schema
+        return form_definition
     }
 
-    //IB Get entries for select vehicle dropdown menu according to connected websockets
+    //IB get entries for Vehicle Selector dropdown menu according to connected websockets
     get_mapEntries() {
+
+        // If map doesn't exist or is empty, return an empty array
         if (!vehicleMap || vehicleMap.size === 0) return []
 
+        // From the window's vehicleMap, filter vehicles which have connected WebSockets
         const connectedVehicles = [...vehicleMap.values()]
             .filter(vehicle => vehicle.ws && vehicle.ws.readyState === WebSocket.OPEN) // Only include connected vehicles
             .map(vehicle => ({
@@ -282,56 +286,47 @@ class WidgetBase extends HTMLElement {
 
     //IB set default option to primary vehicle selected
     primaryVehicleSelector(id) {
-         console.log('evt dispatch select veh')
 
-        if (!this.form) return
+        if (!this.form) return // Return if the form doesn't exist
 
-        const comp = this.form.getComponent("vehicleID")
-        if (!comp) return
+        const comp = this.form.getComponent("vehicleID") // Find Vehicle Selector
+        if (!comp) return // Return if it doesn't exist
 
-        comp.setValue(id)
+        comp.setValue(id) // Set the value to the primary vehicle selected
 
-        this.form.triggerChange()
+        this.form.triggerChange() // Trigger change to update form content and notify the widget
         
     }
 
-    //IB
-    removeDisconnectedVehicles(id) {
-        console.log()
-    }
-
-     //IB update select Vehicle options in dropdown menu according to connected websockets
+    //IB update select Vehicle options in dropdown menu according to connected websockets
     updateVehicleSelect(id) {
-        console.log('updateVehicleSelect called')
 
-        if (!this.form) return
+        if (!this.form) return // Return if form doesn't exist
 
-        // vehicle(s) already in form
+        // Get vehicle(s) already in form and return if no Vehicle Selector
         const compVehID = this.form.getComponent("vehicleID")
         if (!compVehID) return
  
-        // vehicle(s) with connected websockets
+        // Get the vehicle(s) with connected websockets
         const values = this.get_mapEntries()
         const validValues = values.map(v => v.value)
 
-        // update dropdown options to connected vehicles
+        // Update dropdown options to connected vehicles
         compVehID.component.data.values = values
         compVehID.redraw()
 
-        // array-ify selected vehicle(s) already in form
+        // Arrayify selected vehicle(s) already in form
         let compVehIDValues = compVehID.getValue()
         if (Array.isArray(compVehIDValues) == false) {
             compVehIDValues = [compVehIDValues]
         }
 
-        // exit if removed vehicle was not previously selected
+        // Return if removed vehicle was not previously selected
         if (compVehIDValues.includes(id) == false) return
 
-        // remove vehicle from options if it was previously selected
+        // Remove vehicle from options if it was previously selected
         if (compVehIDValues.length > 1) {
-            console.log('about', this.about.name, compVehIDValues)
             const newValue = compVehIDValues.filter(val => validValues.includes(val))
-            console.log('new vale', newValue)
             compVehID.setValue(newValue)
         } else compVehID.setValue("")
 

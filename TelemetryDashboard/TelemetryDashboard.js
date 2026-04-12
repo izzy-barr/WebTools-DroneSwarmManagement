@@ -1,21 +1,19 @@
 
 
-    // Setup connect button in menu widget, this handles WebSocket and incoming MAVLink
+// Setup connect button in menu widget, this handles WebSocket and incoming MAVLink
 function setup_connect(button_svg, button_color) {
-
-    console.log('MultiVeh loaded', window.createVehicle)
 
     const tip_div = document.createElement("div")
     tip_div.appendChild(document.importNode(document.getElementById('connection_tip_template').content, true))
-    const selector = tip_div.querySelector('select[id="vehicleSelector"]') //IB
-    let selectVehicle = null
+    const selector = tip_div.querySelector('select[id="vehicleSelector"]') //IB add selector for primary vehicle
+    let selectVehicle = null //IB add
     const tip = tippy(button_svg, {
         content: tip_div,
         interactive: true,
         trigger: 'manual',
         maxWidth: "1000px",
         appendTo: () => document.body,
-        placement: 'bottom', //IB
+        placement: 'bottom', //IB align to bottom
         popperOptions: {
             strategy: 'fixed',
             modifiers: [
@@ -39,27 +37,21 @@ function setup_connect(button_svg, button_color) {
         tip.show()
     }
 
-
-    // Fix html examples, add stats example to pallet.
-
-    //IB Refresh list for vehicle selection
+    //IB refresh list for primary vehicle selection
     function refresh_selectVehicle() {
-        console.log('refreseh vehicle select claled')
         selector.innerHTML="";            
-        vehicleMap.forEach(element => { console.log('el', element)
+        vehicleMap.forEach(element => {
             if (element.ws && element.ws.readyState === WebSocket.OPEN) {
-            console.log('elemetn', element)
             selector.appendChild(new Option(element.name, element.id))}
         });
     }
 
-    //IB Set selected vehicle
+    //IB set primary vehicle selected
     function set_selectVehicle() {
         let selectedVehicleID = selector.value;
         selectVehicle = vehicleMap.get(selectedVehicleID);
-        console.log('selected vehicle: ' + selectVehicle)
 
-        // send message that a primary vehicle has been selected!
+        // Send message that a primary vehicle has been selected!
         const evt = new CustomEvent('primarySelectVehicle', {
             detail: { vehicleID: selectVehicle?.id }
         })
@@ -83,14 +75,13 @@ function setup_connect(button_svg, button_color) {
         tip.hide()
     }
 
-
-    //IB Define Buttons 
+    //IB define Buttons 
     const add_button = tip_div.querySelector('input[id="add_button"]')
     const select_button = tip_div.querySelector('input[id="select_button"]')
     const form = tip_div.querySelector('div[id="form"]')
 
 
-    //IB Create new websocket input
+    //IB create new WebSocket input
     function addURL(idNum) {
         const ipURL = document.createElement('input');
         ipURL.id = 'url' + idNum;
@@ -101,7 +92,7 @@ function setup_connect(button_svg, button_color) {
         return ipURL;
     }
 
-    //IB Create new name input
+    //IB create new name input
     function addName(idNum) {
         const ipName = document.createElement('input');
         ipName.id = 'name' + idNum;
@@ -112,6 +103,7 @@ function setup_connect(button_svg, button_color) {
         return ipName;
     }
 
+    //IB create remove button
     function addRemove(idNum) {
         const remove = document.createElement('input');
         remove.id = 'remove' + idNum;
@@ -120,6 +112,7 @@ function setup_connect(button_svg, button_color) {
         return remove;
     }
 
+    //IB create connect button
     function addConnect(idNum) {
         const connect = document.createElement('input');
         connect.id = 'connect' + idNum;
@@ -128,6 +121,7 @@ function setup_connect(button_svg, button_color) {
         return connect;
     }
 
+    //IB create disconnect button
     function addDisconnect(idNum) {
         const disconnect = document.createElement('input');
         disconnect.id = 'disconnect' + idNum;
@@ -136,10 +130,9 @@ function setup_connect(button_svg, button_color) {
         return disconnect;
     }
 
-    //IB Add inputs on add button click
+    //IB add inputs on Add button click
     add_button.onclick = () => {
-        console.log('Add button clicked')
-
+        // Create unique vehicle ID, buttons and row element
         const id = crypto.randomUUID();
         const newRemove = addRemove(id);
         const newConnect = addConnect(id);
@@ -147,6 +140,7 @@ function setup_connect(button_svg, button_color) {
         const row = document.createElement('div');
         row.className = 'vehicleRow';
 
+        // Group all inputs together and add to UI
         row.appendChild(addURL(id));
         row.appendChild(addName(id));
         row.appendChild(newConnect);
@@ -154,34 +148,28 @@ function setup_connect(button_svg, button_color) {
         row.appendChild(newRemove);
         form.appendChild(row);
 
+        // Create a vehicle, assign a random colour and add to vehicleMap
         const vehicle = new mavVehicle(row, id);
-
         vehicle.colour = randColour()
-        console.log(vehicle.colour)
-        
         window.createVehicle(vehicle, id);
 
+        // Add event listen for remove button
         newRemove.onclick = () => {
-            console.log('remove button clicked')
 
+            // Get the vehicle from the map, return if nonexistant
             const vehicle = window.vehicleMap.get(id);
+            if (!vehicle) return
 
-            if (!vehicle) {
-                console.log('No vehicle of that id')
-                return;
-            }
-
+            // If connected, disconnect first then remove WebSockets etc, then remove from map
             if (vehicle.webSocketURL.disabled === true) {
                 disconnect(vehicle)
             }
-
             vehicle.remove_ws();
             window.vehicleMap.delete(id);
         }
             
-
+        // Add event listener for connect button
         newConnect.onclick = () => {
-            console.log('newConnect clicked')
             
             const in_progress = (vehicle.ws != null) && ((vehicle.ws.readyState == WebSocket.CONNECTING) || (vehicle.ws.readyState == WebSocket.CLOSING))
             if (in_progress) {
@@ -199,8 +187,8 @@ function setup_connect(button_svg, button_color) {
             connect(vehicle)
         }
 
+        // Add event listener for disconnect button
         newDisconnect.onclick = () => {
-            console.log('newDisconnect clicked')
 
             if ((vehicle.ws != null) && (vehicle.ws.readyState == WebSocket.CLOSING)) {
                 // Don't do anything if the socket is already or closing a connection
@@ -213,7 +201,7 @@ function setup_connect(button_svg, button_color) {
         set_inputs(vehicle, false)
     }
 
-    //IB Select vehicle on button click
+    //IB select primary vehicle on select button click
     select_button.onclick = () => {
         set_selectVehicle()
     }
@@ -221,11 +209,11 @@ function setup_connect(button_svg, button_color) {
 
     function set_inputs(vehicle, connected) { //IB added vehicle parameter to set inputs for specific vehicle
         // Disable connect button, remove button and url input, enable disconnect button
-        vehicle.webSocketURL.disabled = connected //IB part change
-        vehicle.userVehicleName.disabled = connected //IB
-        vehicle.removeBtn.disabled = connected //IB
-        vehicle.connectBtn.disabled = connected //IB
-        vehicle.disconnectBtn.disabled = !connected //IB
+        vehicle.webSocketURL.disabled = connected //IB added vehicle.
+        vehicle.userVehicleName.disabled = connected //IB add
+        vehicle.removeBtn.disabled = connected //IB add
+        vehicle.connectBtn.disabled = connected //IB add
+        vehicle.disconnectBtn.disabled = !connected //IB add
     }
 
     // Connect to WebSocket server
@@ -235,7 +223,7 @@ function setup_connect(button_svg, button_color) {
         // Make sure we are not connected to something else
         disconnect(vehicle)
 
-        //IB Sets websocket to value inputted
+        //IB sets WebSocket and name to value inputted
         vehicle.set_ws();
         vehicle.set_name();
 
@@ -251,7 +239,6 @@ function setup_connect(button_svg, button_color) {
 
         //IB addEventListeners for Open and Close of websockets, nb no 'error' or 'message' here since it is independent of TelemetryDashboard.js
         vehicle.ws.addEventListener('open', () => {
-            console.log('we have open!')
 
             button_color("green")
 
@@ -265,7 +252,6 @@ function setup_connect(button_svg, button_color) {
         })
 
         vehicle.ws.addEventListener('close', () => {
-            console.log('we have close!')
 
             if ((auto_connect === true) && !vehicle.been_connected) {
                 // Don't show a failed connection if this is a auto connection attempt which failed
@@ -286,7 +272,6 @@ function setup_connect(button_svg, button_color) {
 
     // Disconnect from WebSocket server
     function disconnect(vehicle) {
-        console.log('disconnect function called')
         // Close socket
         if (vehicle.ws != null) {
             vehicle.expecting_close = true
@@ -301,13 +286,14 @@ function setup_connect(button_svg, button_color) {
 
     }
 
+    //IB randonly generate colour for vehicle
     function randColour() {
-        console.log('Randome colour called')
         const colour =  '#' + (0x1000000+Math.random()*0xffffff).toString(16).substr(1,6)
         return colour
     }
 
-    refresh_selectVehicle() //IB add to refresh selection options for primary vehicle shown
+    //IB refresh selection options for primary vehicle shown
+    refresh_selectVehicle() 
 
 }
 

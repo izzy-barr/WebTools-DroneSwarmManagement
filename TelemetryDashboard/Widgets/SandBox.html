@@ -113,7 +113,7 @@
     let colour = null //IB add
 
     let replace_div = function() {
-        user_div = document.createElement("div") //IB remove 'const'
+        user_div = document.createElement("div") //IB change to variable
         user_div.style.position = "absolute"
         user_div.style.top = 0
         user_div.style.left = 0
@@ -122,7 +122,7 @@
         user_div.style.margin = "10px"
         user_div.style.border = "5px solid"
         user_div.style.borderRadius = "10px"
-        user_div.style.borderColor = get_colour() //IB
+        user_div.style.borderColor = get_colour() //IB change to function
         user_div.style.backgroundColor = "#ffffff"
 
         user_div.style.padding = "5px"
@@ -132,7 +132,7 @@
 
     let user_error = function(err) {
         // Reset div
-        user_div = replace_div //IB remove 'const'
+        user_div = replace_div //IB change to variable
         user_div.style.overflow = "auto"
 
         // Print to div
@@ -205,7 +205,7 @@
     let load_user_script = function() {
         // Clear class and reset div
         user_class = null
-        user_div = replace_div() //IB remove 'const'
+        user_div = replace_div() //IB change to variable
 
         // Clear lots ot interval IDs to try and kill any callbacks the script may be using
         // This may not work, but were in a sandbox, so meh.
@@ -229,7 +229,7 @@
             return
         }
 
-        try { //IB added if logic to filter messages
+        try { //IB filters messages if the vehicle(s) is/are selected
             update_selected(options.vehicleID)
             
             if (selected.length === 0) return
