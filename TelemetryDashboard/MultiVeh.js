@@ -1,5 +1,6 @@
-console.log('MultiVeh.js loaded')
+//IB created new file to handle multiple vehicles and storing them
 
+// Create global map vehicleMap and function to add vehicle to it
 window.vehicleMap = new Map()
 window.createVehicle = function (vehicle, vehicleID) {
     if (!window.vehicleMap.has(vehicleID)) {
@@ -7,20 +8,22 @@ window.createVehicle = function (vehicle, vehicleID) {
     }
 }
 
+// Create mavVehicle class to hold vehicle info, websocket connection and handlers, and MAVLink parser
 class mavVehicle {
     constructor(rowEl, id) {
-        this.rowEl = rowEl;
-        this.id = id;
+        this.rowEl = rowEl; // Row element in UI which user inputs WebSocket, vehicle name and buttons
+        this.id = id; // Unique vehicle ID, separate to sysID, used for vehicle and message tracking across widgets
         this.set_querySelectors();
-        this.MAVLink = new MAVLink20Processor();
-        this.expecting_close = false;
-        this.been_connected = false;
-        this.target = null;
-        this.ws = null;
-        this.colour = null;
-        this.type = null;
+        this.MAVLink = new MAVLink20Processor(); // Creates MAVLink processor
+        this.expecting_close = false; // Triggered when user clicks disconnect
+        this.been_connected = false; // Prevents multiple connections
+        this.target = null; // Target WebSocket
+        this.ws = null; // WebSocket
+        this.colour = null; // Vehicle colour, initially randomly generated
+        this.type = null; // Vehicle type set with first message
     }
     
+    // Set vehicle name according to user input
     set_name() {
         this.name = this.userVehicleName.value;
     }
@@ -34,9 +37,8 @@ class mavVehicle {
         this.disconnectBtn = this.rowEl.querySelector(`input[id="disconnect${this.id}"]`);
     }
 
-    // Sets the websocket to the value the input
+    // Sets the websocket to the value at the input
     set_ws() {
-        console.log('set_ws called');
         this.target = this.webSocketURL.value;
         this.ws = new WebSocket(this.target);
         this.ws.binaryType = "arraybuffer";
@@ -45,7 +47,6 @@ class mavVehicle {
 
     // Defines what should happen with websocket handlers
     handlers() {
-        console.log('handlers called ' + this.target);
 
         this.ws.onopen = () => {
             console.log('ws.onopen called ' + this.target)
@@ -63,32 +64,30 @@ class mavVehicle {
             })
             
             window.dispatchEvent(evt)
-            console.log('evt dispatched', evt)
 
             console.error('ws.onclosed called ' + this.target, e.code, e.reason)
         }
 
         this.ws.onmessage = (msg) => {
-            console.log('ws.onmessage ' + this.target)
             // Feed data to MAVLink parser and forward messages
             for (const char of new Uint8Array(msg.data)) {
                 const m = this.MAVLink.parseChar(char)
                 if ((m != null) && (m._id != -1)) {
                     m._timeStamp = Date.now()
-                    m._vehicleID = this.id;
-                    m._colour = this.colour;
+                    m._vehicleID = this.id; // Tags message with vehicleID to compare on widgets for selection
+                    m._colour = this.colour; // Current vehicle colour
                     mavlinkChannel.postMessage({ MAVLink: m })
                     if (this.type == null && m._id === 0) {
-                        this.type = m.type
+                        this.type = m.type // Sets vehicle type from first message only once
                     }
                 }
             }
         }
     }
 
+    // Removing the vehicle
     remove_ws() {
-        console.log('remove_ws called');
-
+        // Remove handlers and close WebSocket
         if (this.ws) {
             this.ws.onopen = null;
             this.ws.onclose = null;
@@ -100,6 +99,7 @@ class mavVehicle {
             this.ws = null;
         }
 
+        // Remove row element from UI
         if (this.rowEl) {
             this.rowEl.remove();
             this.rowEl = null;

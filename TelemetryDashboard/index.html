@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <link rel="icon" href="../images/AP_favicon.png">
-    <title>Telemetry Dashboard</title> <!--IB-->
+    <title>Telemetry Dashboard</title> <!--IB changed name-->
 
     <script type="text/javascript" src="../modules/build/floating-ui/dist/umd/popper.min.js"></script>
     <script type="text/javascript" src="../modules/build/tippyjs/dist/tippy-bundle.umd.min.js"></script>
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
 
     <script type="text/javascript" src="MAVLink/mavlink.js"></script>
-    <script type="text/javascript" src="MultiVeh.js"></script> <!--IB-->
+    <script type="text/javascript" src="MultiVeh.js"></script> <!--IB added Multi Vehicle Script-->
 
     <script type="text/javascript" src="Widgets/Base_Class.js"></script>
     <script type="text/javascript" src="Widgets/Menu.js"></script>
@@ -87,7 +87,7 @@
         </a>
     </template>
 
-    <template id="GH_link">
+    <template id="GH_link"><!--IB changed URL to project GitHub-->
         <a href="https://github.com/izzy-barr/WebTools-DroneSwarmManagement" style="box-sizing:border-box; display:flex; justify-content: center; align-items: center; width:100%; height:100%;">
             <img style="cursor:pointer; width:70%; height:70%; object-fit:contain;" src="../images/github-mark.png">
         </div>
@@ -166,10 +166,10 @@
                 <label for="target_url">Add server address</label>&nbsp <!--IB change name-->
                 <img id="TT" src="../images/question-circle.svg" style="width: 1em;"
                 data-tippy-allowHTML="true"
-                data-tippy-content='Connection address for WebSocket server forwarding raw binary MAVLink. Attempts to auto connect to MissionPlanner at <code>ws://127.0.0.1:56781</code>. Latest PyMAVLink can also be used eg: <a href="https://github.com/IamPete1/pymavlink/blob/WebSocket_forwarding_example/examples/mavtcpsniff.py">TCP to WebSocket</a>. 
-                This is read only, MAVLink commands are not sent (including stream rate requests).'/>
-                <input id="add_button" type="button" value="+"> <!--IB-->
-                <!--IB add-->
+                data-tippy-content='Connection address for WebSocket server forwarding raw binary MAVLink. Latest PyMAVLink can also be used eg: <a href="https://github.com/izzy-barr/WebTools-DroneSwarmManagement/blob/main/Deliverables/mavtcpsniff.py">TCP to WebSocket</a> from any IP address. 
+                This is read only, MAVLink commands are not sent (including stream rate requests).'/> <!--IB changed URL to mavtcpsniff.py which can be used with any IP address-->
+                <input id="add_button" type="button" value="+"> <!--IB added Add button-->
+                <!--IB added Primary vehicle selector, tooltip and select button-->
                 <label for="vehicleSelector">|| Primary vehicle:</label>
                 <img id="TTselect" src="../images/question-circle.svg" style="width: 1em;"
                 data-tippy-allowHTML="true"

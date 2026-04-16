@@ -9,7 +9,7 @@
     <!--IB add in Vehicle Info PopUp Template-->
     <template id="vehicle_info_tip_template">
         <div style="display:flex; flex-direction:column;">
-            <div style="display:flex; justify-content: right; align-items: center; width: 450px; height:2em; padding:2px; box-sizing:border-box;">
+            <div style="display:flex; justify-content: right; align-items: center; width: 380px; height:2em; padding:2px; box-sizing:border-box;">
                 <span id="InfoNameSpan" style="position:absolute; left:10px; font-size:1.2em;">Vehicle Information</span>
                 <svg id="Close" style="cursor:pointer; max-width:80%; max-height:80%;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path style="fill:white" d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z"/></svg>
             </div>
@@ -113,7 +113,7 @@
     let colour = null //IB add
 
     let replace_div = function() {
-        user_div = document.createElement("div") //IB remove 'const'
+        user_div = document.createElement("div") //IB change to variable
         user_div.style.position = "absolute"
         user_div.style.top = 0
         user_div.style.left = 0
@@ -122,7 +122,7 @@
         user_div.style.margin = "10px"
         user_div.style.border = "5px solid"
         user_div.style.borderRadius = "10px"
-        user_div.style.borderColor = get_colour() //IB
+        user_div.style.borderColor = get_colour() //IB change to function
         user_div.style.backgroundColor = "#ffffff"
 
         user_div.style.padding = "5px"
@@ -132,7 +132,7 @@
 
     let user_error = function(err) {
         // Reset div
-        user_div = replace_div //IB remove 'const'
+        user_div = replace_div //IB change to variable
         user_div.style.overflow = "auto"
 
         // Print to div
@@ -205,7 +205,7 @@
     let load_user_script = function() {
         // Clear class and reset div
         user_class = null
-        user_div = replace_div() //IB remove 'const'
+        user_div = replace_div() //IB change to variable
 
         // Clear lots ot interval IDs to try and kill any callbacks the script may be using
         // This may not work, but were in a sandbox, so meh.
@@ -229,7 +229,7 @@
             return
         }
 
-        try { //IB added if logic to filter messages
+        try { //IB filters messages if the vehicle(s) is/are selected
             update_selected(options.vehicleID)
             
             if (selected.length === 0) return
