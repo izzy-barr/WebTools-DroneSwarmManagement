@@ -218,7 +218,6 @@ function setup_connect(button_svg, button_color) {
 
     // Connect to WebSocket server
     function connect(vehicle, auto_connect) { 
-        console.log('connect function called')
         
         // Make sure we are not connected to something else
         disconnect(vehicle)
